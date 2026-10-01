@@ -1,7 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proviyaa_pos/data/online_orders_store.dart';
-import 'package:proviyaa_pos/data/supabase_online_orders_store.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:proviyaa_pos/data/api/api_client.dart';
+import 'package:proviyaa_pos/data/api/api_online_orders_store.dart';
 import 'package:proviyaa_pos/presentation/online_orders_screen.dart';
 
 void main() {
@@ -102,22 +107,72 @@ void main() {
     });
   });
 
-  group('SupabaseOnlineOrdersStore Error State', () {
-    test(
-        'Unconfigured client sets error state without falling back to dummy data',
+  group('ApiOnlineOrdersStore (through the Proviyaa backend)', () {
+    test('loads the backend inbox, cancels on reject, and never deletes',
         () async {
-      final sbStore = SupabaseOnlineOrdersStore(client: null, autoInit: false);
-      addTearDown(sbStore.dispose);
+      final calls = <String>[];
+      var rows = [
+        {
+          'order_id': 'ol:6f1c2b8e-0000-4000-8000-000000000001',
+          'display_id': 'OL-6F1C2B8E',
+          'platform': 'One Latur',
+          'customer': 'Priya Nair',
+          'items_label': '2x Veg Biryani',
+          'amount_minor': 42000,
+          'status': 'Pending',
+          'time': '7:05 PM',
+          'action_label': 'Accept',
+        }
+      ];
+      final api = ProviyaaApiClient(
+          baseUrl: 'http://backend.test',
+          httpClient: MockClient((req) async {
+            calls.add('${req.method} ${req.url.path}');
+            expect(req.headers['Authorization'], 'Bearer t');
+            if (req.method == 'DELETE') {
+              rows = [];
+              return http.Response('', 204);
+            }
+            return http.Response(jsonEncode({'data': rows}), 200);
+          }));
+      api.session = const ApiSession(
+          accessToken: 't',
+          refreshToken: 'r',
+          expiresAt: 0,
+          userId: 'u',
+          email: 'a@b.c');
+      final store = ApiOnlineOrdersStore(api, autoStart: false);
+      addTearDown(store.dispose);
 
-      await sbStore.init();
+      await store.refresh();
+      expect(store.state.isSuccess, isTrue);
+      expect(store.state.orders.single.customer, 'Priya Nair');
 
-      expect(sbStore.state.isError, isTrue);
-      expect(sbStore.state.orders, isEmpty);
-      expect(
-          sbStore.state.errorMessage, contains('Supabase is not configured'));
+      await store.deleteOrder('ol:6f1c2b8e-0000-4000-8000-000000000001');
+      expect(calls, contains(
+          'DELETE /v1/operations/online-orders/ol%3A6f1c2b8e-0000-4000-8000-000000000001'));
+      expect(store.state.orders, isEmpty);
+    });
+
+    test('shows an error, not dummy data, when the backend is unreachable',
+        () async {
+      final api = ProviyaaApiClient(
+          baseUrl: 'http://backend.test',
+          httpClient: MockClient((_) async => throw Exception('offline')));
+      api.session = const ApiSession(
+          accessToken: 't',
+          refreshToken: 'r',
+          expiresAt: 0,
+          userId: 'u',
+          email: 'a@b.c');
+      final store = ApiOnlineOrdersStore(api, autoStart: false);
+      addTearDown(store.dispose);
+      await store.init();
+      expect(store.state.isError, isTrue);
+      expect(store.state.orders, isEmpty);
+      expect(store.state.errorMessage, contains('Cannot reach'));
     });
   });
-
   group('OnlineOrdersScreen Widget Tests (Empty, Loading, Success, CRUD)', () {
     late InMemoryOnlineOrdersStore store;
 
@@ -146,7 +201,7 @@ void main() {
       expect(find.text('Online Orders'), findsOneWidget);
       expect(find.text('0 orders today'), findsOneWidget);
       expect(find.text('No orders found'), findsOneWidget);
-      expect(find.text('There are currently no online orders in Supabase.'),
+      expect(find.text('There are currently no online orders.'),
           findsOneWidget);
       // Verify no dummy rows exist
       expect(find.text('#ZOM-4821'), findsNothing);

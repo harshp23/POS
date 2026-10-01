@@ -11,9 +11,9 @@ import 'package:proviyaa_pos/presentation/dine_in_screen.dart';
 
 void main() {
   group('Database Persistence & Schema Version', () {
-    test('AppDatabase schemaVersion is 2', () {
+    test('AppDatabase schemaVersion is 7', () {
       final db = AppDatabase(NativeDatabase.memory());
-      expect(db.schemaVersion, equals(2));
+      expect(db.schemaVersion, equals(7));
       db.close();
     });
 

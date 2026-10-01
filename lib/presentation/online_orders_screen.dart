@@ -1,14 +1,11 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../data/drift_menu_store.dart';
 import '../data/local_menu_catalog.dart';
 import '../data/local_online_orders_catalog.dart';
 import '../data/online_orders_store.dart';
-import '../data/supabase_online_orders_store.dart';
 import '../domain/menu.dart';
+import 'operations/ops_pickers.dart' show distinctNames, friendlyError;
 import 'vinii_theme.dart';
 
 const _colBadge = 24.0;
@@ -46,13 +43,13 @@ class OnlineOrdersScreen extends StatefulWidget {
 
 class _OnlineOrdersScreenState extends State<OnlineOrdersScreen> {
   late final OnlineOrdersStore _store =
-      widget.ordersStore ?? SupabaseOnlineOrdersStore();
+      widget.ordersStore ?? InMemoryOnlineOrdersStore();
   late final Stream<OnlineOrdersState> _stateStream = _store.watchState();
 
   @override
   void dispose() {
-    if (widget.ordersStore == null && _store is SupabaseOnlineOrdersStore) {
-      (_store as SupabaseOnlineOrdersStore).dispose();
+    if (widget.ordersStore == null && _store is InMemoryOnlineOrdersStore) {
+      (_store as InMemoryOnlineOrdersStore).dispose();
     }
     super.dispose();
   }
@@ -71,10 +68,12 @@ class _OnlineOrdersScreenState extends State<OnlineOrdersScreen> {
     'Archived': ViniiColors.graySolid,
   };
 
+  /// Keyed by full platform name ([OnlineOrderRow.platformName]).
   static const _platformBadgeColors = <String, Color>{
-    'Z': ViniiColors.redSolid,
-    'S': ViniiColors.amberSolid,
-    'W': ViniiColors.greenSolid,
+    'Zomato': ViniiColors.redSolid,
+    'Swiggy': ViniiColors.amberSolid,
+    'Website': ViniiColors.greenSolid,
+    'One Latur': ViniiColors.purpleSolid,
   };
 
   static const _allStatusTabs = [
@@ -92,17 +91,14 @@ class _OnlineOrdersScreenState extends State<OnlineOrdersScreen> {
     if (_platform == 'All Platforms') {
       return true;
     }
-    final platLower = order.platform.toLowerCase();
-    if (_platform == 'Zomato') {
-      return platLower == 'z' || platLower == 'zomato';
-    }
-    if (_platform == 'Swiggy') {
-      return platLower == 's' || platLower == 'swiggy';
-    }
-    if (_platform == 'Website') {
-      return platLower == 'w' || platLower == 'website';
-    }
-    return true;
+    // platformName maps old single-letter codes ('Z') to full names.
+    return order.platformName == _platform;
+  }
+
+  /// "Order ORD-248" — the reference people read, never the internal id.
+  static String _orderTitle(OnlineOrderRow row) {
+    final ref = row.displayId;
+    return ref.isEmpty ? 'Order' : 'Order $ref';
   }
 
   bool _matchesStatus(OnlineOrderRow order) {
@@ -120,7 +116,7 @@ class _OnlineOrdersScreenState extends State<OnlineOrdersScreen> {
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Order ${row.orderId} Accepted'),
+          content: Text('${_orderTitle(row)} Accepted'),
           backgroundColor: ViniiColors.greenSolid,
           duration: const Duration(seconds: 2),
         ),
@@ -131,7 +127,7 @@ class _OnlineOrdersScreenState extends State<OnlineOrdersScreen> {
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to accept order: $e'),
+          content: Text('Failed to accept order: ${friendlyError(e)}'),
           backgroundColor: ViniiColors.redSolid,
         ),
       );
@@ -142,9 +138,9 @@ class _OnlineOrdersScreenState extends State<OnlineOrdersScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Reject Order ${row.orderId}?'),
+        title: Text('Reject ${_orderTitle(row)}?'),
         content: Text(
-          'Rejecting this order from ${row.customer} will permanently delete it from Supabase.',
+          'Rejecting this order from ${row.customer} cancels it for the restaurant and the customer.',
         ),
         actions: [
           TextButton(
@@ -169,7 +165,7 @@ class _OnlineOrdersScreenState extends State<OnlineOrdersScreen> {
         }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Order ${row.orderId} Rejected & Deleted'),
+            content: Text('${_orderTitle(row)} Rejected & Deleted'),
             backgroundColor: ViniiColors.redSolid,
             duration: const Duration(seconds: 2),
           ),
@@ -180,7 +176,7 @@ class _OnlineOrdersScreenState extends State<OnlineOrdersScreen> {
         }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to delete order: $e'),
+            content: Text('Failed to delete order: ${friendlyError(e)}'),
             backgroundColor: ViniiColors.redSolid,
           ),
         );
@@ -232,7 +228,7 @@ class _OnlineOrdersScreenState extends State<OnlineOrdersScreen> {
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Order ${row.orderId} moved to $nextStatus'),
+          content: Text('${_orderTitle(row)} moved to $nextStatus'),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -242,7 +238,7 @@ class _OnlineOrdersScreenState extends State<OnlineOrdersScreen> {
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to update order: $e'),
+          content: Text('Failed to update order: ${friendlyError(e)}'),
           backgroundColor: ViniiColors.redSolid,
         ),
       );
@@ -251,8 +247,14 @@ class _OnlineOrdersScreenState extends State<OnlineOrdersScreen> {
 
   Future<void> _showNewOrderDialog() async {
     final formKey = GlobalKey<FormState>();
-    String platform = 'Z';
+    // Full platform names — the values the backend accepts.
+    String platform = LocalOnlineOrdersCatalog.newOrderPlatforms.first;
     String customer = '';
+    // Customers already on online orders, suggested as the name is typed.
+    final knownCustomers = distinctNames(_store.state.orders
+            .map((o) => o.customer))
+        .where((n) => n != 'Guest' && n != 'Customer')
+        .toList();
     final selectedQuantities = <String, int>{}; // itemId -> quantity
     String searchQuery = '';
     bool hasAttemptedSubmit = false;
@@ -322,13 +324,10 @@ class _OnlineOrdersScreenState extends State<OnlineOrdersScreen> {
                           labelText: 'Platform',
                           isDense: true,
                         ),
-                        items: const [
-                          DropdownMenuItem(
-                              value: 'Z', child: Text('Zomato (Z)')),
-                          DropdownMenuItem(
-                              value: 'S', child: Text('Swiggy (S)')),
-                          DropdownMenuItem(
-                              value: 'W', child: Text('Website (W)')),
+                        items: [
+                          for (final p
+                              in LocalOnlineOrdersCatalog.newOrderPlatforms)
+                            DropdownMenuItem(value: p, child: Text(p)),
                         ],
                         onChanged: (val) {
                           if (val != null) {
@@ -338,17 +337,32 @@ class _OnlineOrdersScreenState extends State<OnlineOrdersScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Customer Name
-                      TextFormField(
-                        decoration: const InputDecoration(
-                          labelText: 'Customer Name',
-                          hintText: 'e.g. Priya Verma',
-                          isDense: true,
+                      // Customer Name — suggests customers from earlier
+                      // online orders; a new name can still be typed.
+                      Autocomplete<String>(
+                        optionsBuilder: (value) {
+                          final q = value.text.trim().toLowerCase();
+                          if (q.isEmpty) return const Iterable<String>.empty();
+                          return knownCustomers.where((n) =>
+                              n.toLowerCase() != q &&
+                              n.toLowerCase().contains(q));
+                        },
+                        fieldViewBuilder: (context, controller, focusNode,
+                                onFieldSubmitted) =>
+                            TextFormField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          decoration: const InputDecoration(
+                            labelText: 'Customer Name',
+                            hintText: 'e.g. Priya Verma',
+                            isDense: true,
+                          ),
+                          validator: (v) => v == null || v.trim().isEmpty
+                              ? 'Customer name is required'
+                              : null,
+                          onSaved: (v) => customer = v?.trim() ?? '',
+                          onFieldSubmitted: (_) => onFieldSubmitted(),
                         ),
-                        validator: (v) => v == null || v.trim().isEmpty
-                            ? 'Customer name is required'
-                            : null,
-                        onSaved: (v) => customer = v?.trim() ?? '',
                       ),
                       const SizedBox(height: 16),
 
@@ -610,7 +624,7 @@ class _OnlineOrdersScreenState extends State<OnlineOrdersScreen> {
                                 labelPadding:
                                     const EdgeInsets.symmetric(horizontal: 4),
                                 label: Text(
-                                  '${entry.value}x ${itemMap[entry.key]?.name ?? entry.key}',
+                                  '${entry.value}x ${itemMap[entry.key]?.name ?? 'Item'}',
                                   style: const TextStyle(fontSize: 11.5),
                                 ),
                                 deleteIcon: const Icon(Icons.close, size: 14),
@@ -715,13 +729,6 @@ class _OnlineOrdersScreenState extends State<OnlineOrdersScreen> {
                     }
                     formKey.currentState?.save();
 
-                    final prefix = platform == 'Z'
-                        ? 'ZOM'
-                        : platform == 'S'
-                            ? 'SWG'
-                            : 'WEB';
-                    final randomId =
-                        '#$prefix-${Random().nextInt(9000) + 1000}';
                     final now = DateTime.now();
                     final hour = now.hour % 12 == 0 ? 12 : now.hour % 12;
                     final minute = now.minute.toString().padLeft(2, '0');
@@ -729,11 +736,13 @@ class _OnlineOrdersScreenState extends State<OnlineOrdersScreen> {
 
                     final itemsLabel = selectedQuantities.entries
                         .map((e) =>
-                            '${e.value}x ${itemMap[e.key]?.name ?? e.key}')
+                            '${e.value}x ${itemMap[e.key]?.name ?? 'Item'}')
                         .join(', ');
 
                     final newOrder = OnlineOrderRow(
-                      orderId: randomId,
+                      // The store assigns the reference (the server's
+                      // order number, or a local one without a server).
+                      orderId: '',
                       platform: platform,
                       customer: customer,
                       itemsLabel: itemsLabel,
@@ -745,15 +754,19 @@ class _OnlineOrdersScreenState extends State<OnlineOrdersScreen> {
                     );
 
                     try {
-                      await _store.insertOrder(newOrder);
+                      final created = await _store.insertOrder(newOrder);
                       if (ctx.mounted) {
                         Navigator.of(ctx).pop();
                       }
                       if (mounted) {
+                        final total =
+                            '₹${(totalMinor / 100).toStringAsFixed(2)}';
+                        final ref = created.displayId;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(
-                                'Created Order $randomId (Total: ₹${(totalMinor / 100).toStringAsFixed(2)})'),
+                            content: Text(ref.isEmpty
+                                ? 'Order created (Total: $total)'
+                                : 'Created Order $ref (Total: $total)'),
                             backgroundColor: ViniiColors.brandGreen,
                           ),
                         );
@@ -762,7 +775,8 @@ class _OnlineOrdersScreenState extends State<OnlineOrdersScreen> {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Failed to create order: $err'),
+                            content: Text(
+                                'Failed to create order: ${friendlyError(err)}'),
                             backgroundColor: ViniiColors.redSolid,
                           ),
                         );
@@ -781,37 +795,6 @@ class _OnlineOrdersScreenState extends State<OnlineOrdersScreen> {
     );
   }
 
-  void _copyMigrationSql(BuildContext context) {
-    const migrationSql = '''
-CREATE TABLE IF NOT EXISTS public.online_orders (
-  order_id TEXT PRIMARY KEY,
-  platform TEXT NOT NULL,
-  customer TEXT NOT NULL,
-  items_label TEXT NOT NULL,
-  amount_minor BIGINT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'Pending',
-  action_label TEXT NOT NULL DEFAULT 'Accept',
-  time TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-ALTER TABLE public.online_orders ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow anon select on online_orders" ON public.online_orders FOR SELECT TO anon, authenticated USING (true);
-CREATE POLICY "Allow anon insert on online_orders" ON public.online_orders FOR INSERT TO anon, authenticated WITH CHECK (true);
-CREATE POLICY "Allow anon update on online_orders" ON public.online_orders FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Allow anon delete on online_orders" ON public.online_orders FOR DELETE TO anon, authenticated USING (true);
-ALTER PUBLICATION supabase_realtime ADD TABLE public.online_orders;
-''';
-    Clipboard.setData(const ClipboardData(text: migrationSql));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-            'SQL Migration copied to clipboard! Paste into Supabase SQL Editor.'),
-        duration: Duration(seconds: 4),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) => StreamBuilder<OnlineOrdersState>(
         initialData: _store.state,
@@ -819,7 +802,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.online_orders;
         builder: (context, snapshot) {
           final state = snapshot.data ?? _store.state;
 
-          // Calculate counts strictly from the actual orders in Supabase
+          // Calculate counts strictly from the actual orders in the backend
           final allOrders = state.orders;
           final filtered =
               allOrders.where(_matchesPlatform).where(_matchesStatus).toList();
@@ -867,7 +850,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.online_orders;
                         ),
                       ),
                       const Spacer(),
-                      // Supabase Status Indicator
+                      // the backend Status Indicator
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
@@ -924,7 +907,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.online_orders;
                                   color: ViniiColors.greenSolid, size: 14),
                               const SizedBox(width: 6),
                               const Text(
-                                'Supabase Live',
+                                'Live',
                                 style: TextStyle(
                                   color: ViniiColors.greenSolid,
                                   fontSize: 12,
@@ -973,7 +956,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.online_orders;
                   ),
                   const SizedBox(height: 10),
 
-                  // Status Tabs with Live Dynamic Counts from Supabase
+                  // Status Tabs with Live Dynamic Counts from the backend
                   Wrap(
                     spacing: 8,
                     children: [
@@ -1016,14 +999,12 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.online_orders;
     // 2. Error State: Display Error message with Retry and Copy Migration SQL options
     if (state.isError) {
       return _OrdersErrorView(
-        message: state.errorMessage ??
-            'Failed to connect to Supabase. Check your configuration.',
+        message: state.errorMessage ?? 'Online orders could not be loaded.',
         onRetry: () => _store.refresh(),
-        onCopySql: () => _copyMigrationSql(context),
       );
     }
 
-    // 3. Success State: Empty Supabase database
+    // 3. Success State: Empty the backend database
     if (state.isEmpty) {
       return Container(
         decoration: BoxDecoration(
@@ -1051,7 +1032,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.online_orders;
               ),
               const SizedBox(height: 8),
               const Text(
-                'There are currently no online orders in Supabase.',
+                'There are currently no online orders.',
                 style: TextStyle(
                   fontSize: 13,
                   color: ViniiColors.textMutedLight,
@@ -1113,7 +1094,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.online_orders;
       );
     }
 
-    // 5. Success State: Display Actual Orders Table from Supabase
+    // 5. Success State: Display Actual Orders Table from the backend
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -1137,11 +1118,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.online_orders;
               ),
               itemBuilder: (context, i) {
                 final row = filtered[i];
-                final platColor =
-                    _platformBadgeColors[row.platform.toUpperCase()] ??
-                        ViniiColors.blueSolid;
+                final platColor = _platformBadgeColors[row.platformName] ??
+                    ViniiColors.blueSolid;
                 final statColor =
-                    _statusColors[row.status] ?? ViniiColors.graySolid;
+                    _statusColors[row.statusLabel] ?? ViniiColors.graySolid;
 
                 return _OnlineOrderRowWidget(
                   row: row,
@@ -1184,31 +1164,49 @@ class _OnlineOrderRowWidget extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Container(
-              width: _colBadge,
-              height: _colBadge,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: platformColor,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                row.platform.isNotEmpty ? row.platform[0].toUpperCase() : 'O',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+            Tooltip(
+              message: row.platformName,
+              child: Container(
+                width: _colBadge,
+                height: _colBadge,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: platformColor,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  row.platformName.isNotEmpty
+                      ? row.platformName[0].toUpperCase()
+                      : 'O',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 12),
             SizedBox(
               width: _colOrder,
-              child: Text(
-                row.orderId,
-                overflow: TextOverflow.ellipsis,
-                style:
-                    const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // The reference people read — never the internal id.
+                  Text(
+                    row.displayId.isEmpty ? '—' : row.displayId,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
+                  Text(
+                    row.platformName,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 11, color: ViniiColors.textMutedLight),
+                  ),
+                ],
               ),
             ),
             SizedBox(
@@ -1250,7 +1248,7 @@ class _OnlineOrderRowWidget extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    row.status,
+                    row.statusLabel,
                     style: TextStyle(
                       color: statusColor,
                       fontSize: 11.5,
@@ -1375,7 +1373,7 @@ class _OrdersSkeletonLoader extends StatelessWidget {
                 ),
                 SizedBox(width: 12),
                 Text(
-                  'Loading orders from Supabase...',
+                  'Loading online orders...',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -1438,12 +1436,10 @@ class _OrdersErrorView extends StatelessWidget {
   const _OrdersErrorView({
     required this.message,
     required this.onRetry,
-    required this.onCopySql,
   });
 
   final String message;
   final VoidCallback onRetry;
-  final VoidCallback onCopySql;
 
   @override
   Widget build(BuildContext context) {
@@ -1466,7 +1462,7 @@ class _OrdersErrorView extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               const Text(
-                'Supabase Connection Error',
+                'Online orders unavailable',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -1494,12 +1490,6 @@ class _OrdersErrorView extends StatelessWidget {
                     icon: const Icon(Icons.refresh, size: 18),
                     label: const Text('Retry Connection',
                         style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                  const SizedBox(width: 12),
-                  OutlinedButton.icon(
-                    onPressed: onCopySql,
-                    icon: const Icon(Icons.copy, size: 18),
-                    label: const Text('Copy SQL Migration'),
                   ),
                 ],
               ),

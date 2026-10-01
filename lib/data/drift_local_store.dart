@@ -12,6 +12,10 @@ class DriftLocalStore implements PosLocalStore {
   DriftLocalStore(this._db);
   final AppDatabase _db;
 
+  /// The device database (screens that only receive this store build the
+  /// Operations store on it).
+  AppDatabase get db => _db;
+
   @override
   Future<void> saveOrderWithPendingIntent(LocalOrder order) {
     return _db.transaction(() async {

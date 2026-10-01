@@ -1,4 +1,5 @@
 import '../domain/kitchen_ticket.dart';
+import '../domain/operations.dart' show kotNumberLabel, orderNumberLabel;
 import '../domain/order.dart';
 
 abstract interface class KitchenLocalStore {
@@ -33,15 +34,37 @@ class KitchenService {
   Future<KitchenTicket> advance(String ticketId) async {
     final ticket = await store.findTicket(ticketId);
     if (ticket == null) {
-      throw ArgumentError('No kitchen ticket $ticketId.');
+      throw ArgumentError(
+          'This kitchen ticket was not found — it may have been removed.');
     }
     final next = kitchenTicketForwardTransitions[ticket.status];
     if (next == null) {
-      throw StateError('Ticket $ticketId is already ${ticket.status.name}.');
+      final name = ticketName(ticket.ticketId);
+      throw StateError('${name[0].toUpperCase()}${name.substring(1)} is '
+          'already ${statusLabel(ticket.status).toLowerCase()}.');
     }
     await store.advanceStatus(ticketId, next);
     return ticket.copyWith(status: next);
   }
 
   Future<List<KitchenTicket>> openTickets() => store.listOpen();
+
+  /// How people know a ticket: "the KOT for ORD-248" (tickets made here
+  /// are keyed `<order>:kot`), else its KOT number / device key.
+  static String ticketName(String ticketId) {
+    const suffix = ':kot';
+    if (ticketId.endsWith(suffix)) {
+      final orderId = ticketId.substring(0, ticketId.length - suffix.length);
+      return 'the KOT for ${orderNumberLabel(orderId, null)}';
+    }
+    return kotNumberLabel(ticketId, null);
+  }
+
+  /// New / Preparing / Ready / Served.
+  static String statusLabel(KitchenTicketStatus s) => switch (s) {
+        KitchenTicketStatus.newTicket => 'New',
+        KitchenTicketStatus.preparing => 'Preparing',
+        KitchenTicketStatus.ready => 'Ready',
+        KitchenTicketStatus.completed => 'Served',
+      };
 }

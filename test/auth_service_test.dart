@@ -4,9 +4,9 @@ import 'package:proviyaa_pos/application/auth_service.dart';
 import 'package:proviyaa_pos/data/app_database.dart';
 import 'package:proviyaa_pos/data/drift_device_session_store.dart';
 
-/// The real backend (SupabaseAuthBackend) needs a live project and a
+/// The real backend (the Proviyaa backend, /v1/auth/login) needs a server and a
 /// real staff account this session has neither of — see the header
-/// comment on lib/data/supabase_auth_backend.dart. This fake is what
+/// backend end-to-end test (test/backend_end_to_end_test.dart). This fake is what
 /// actually gets exercised; it's the offline-grant caching logic below
 /// that matters most, and that logic is identical regardless of which
 /// AuthBackend is plugged in.

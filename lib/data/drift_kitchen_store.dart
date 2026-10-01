@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../application/kitchen_service.dart';
 import '../domain/kitchen_ticket.dart';
 import 'app_database.dart';
+import 'drift_operations_store.dart';
 
 class DriftKitchenStore implements KitchenLocalStore {
   DriftKitchenStore(this._db);
@@ -27,11 +28,22 @@ class DriftKitchenStore implements KitchenLocalStore {
     return row == null ? null : _toDomain(row);
   }
 
+  /// Moves a ticket one step forward — the same transition the Operations
+  /// kitchen screens make (Served stamps completed_at, Ready ticks the
+  /// order's items done, a cancelled order's ticket is refused). [to] must
+  /// be the ticket's next status; anything else is rejected.
   @override
   Future<void> advanceStatus(String ticketId, KitchenTicketStatus to) async {
-    await (_db.update(_db.kitchenTickets)
-          ..where((t) => t.ticketId.equals(ticketId)))
-        .write(KitchenTicketsCompanion(status: Value(to.name)));
+    await _db.transaction(() async {
+      final current = await findTicket(ticketId);
+      if (current == null) throw ArgumentError('No kitchen ticket $ticketId.');
+      final next = kitchenTicketForwardTransitions[current.status];
+      if (next != to) {
+        throw StateError('Ticket $ticketId cannot move from '
+            '${current.status.name} to ${to.name}.');
+      }
+      await DriftOperationsStore(_db).advanceKot(ticketId);
+    });
   }
 
   @override

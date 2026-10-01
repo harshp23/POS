@@ -9,141 +9,112 @@
 // Only Cash is wired to actually complete — PRD §9: "A screenshot,
 // manually entered UPI reference or offline 'paid' tap is not provider
 // verification." Card/UPI/Split Pay are shown (matching the reference)
-// but refuse to complete, since accepting them here would misrepresent
-// an unverified tap as a confirmed digital payment.
+// but refuse to complete here, since accepting them would misrepresent
+// an unverified tap as a confirmed digital payment. (Operations → POS
+// Billing records them as "pending verification" for a manager to
+// verify.)
 //
-// Completing a cash payment really persists a Payment record through
-// PaymentService (own table, own idempotent-by-order-id write) — kept
-// separate from LocalOrder/LocalOrderStatus per PRD §9: "Separate
-// order, kitchen, delivery, payment and settlement states; do not
-// overload one status."
+// Completing a cash payment records the payment AND settles the order in
+// one transaction through the Operations store (the same orders /
+// payments / tables rows Operations uses): the order is closed, its
+// table is released for cleaning and its All Orders row (linked by order
+// id) shows Completed — so Operations cannot settle it a second time.
 //
-// Service Charge, Discount/coupon and Add Tip appear in the reference
-// but there is no real service-charge/promotion/tip feature built yet
-// — inventing a 10% figure or a WELCOME10 coupon would misrepresent
-// functionality that doesn't exist, so those rows are left out rather
-// than faked. Only Subtotal, GST and Total (values this app actually
-// computes) are shown.
+// Service Charge, coupons and Add Tip appear in the reference but there
+// is no real service-charge/promotion/tip feature — those rows are left
+// out rather than faked. Subtotal, the order's discount (if any), GST at
+// the order's stored rate and the Total are shown.
+//
+// "Print Bill" opens the on-screen bill preview: no receipt printer is
+// connected, and the screen says so instead of claiming a print.
 
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../application/payment_service.dart';
-import '../data/drift_all_orders_store.dart';
-import '../data/local_all_orders_catalog.dart';
-import '../domain/order.dart';
+import '../data/drift_operations_store.dart';
+import '../domain/operations.dart';
+import 'operations/ops_order_dialogs.dart';
+import 'operations/ops_pickers.dart';
 import 'vinii_theme.dart';
 
 enum _PaymentMethod { cash, card, upi, split }
 
-class PaymentScreen extends StatefulWidget {
-  const PaymentScreen(
-      {super.key,
-      required this.order,
-      required this.orderNumber,
-      required this.paymentService,
-      this.allOrdersStore});
-  final LocalOrder order;
-  final PaymentService paymentService;
-  final DriftAllOrdersStore? allOrdersStore;
+String _rupees(int minor, {int decimals = 2}) =>
+    '₹${(minor / 100).toStringAsFixed(decimals)}';
 
-  /// A short display number — the real order-numbering scheme (PRD §11:
-  /// "display numbering is separate [from the record id] and must not
-  /// be silently rewritten") isn't built yet, so the caller supplies one.
-  final String orderNumber;
+class PaymentScreen extends StatefulWidget {
+  const PaymentScreen({super.key, required this.ops, required this.orderId});
+
+  /// The Operations store — orders, payments and tables are shared with
+  /// Operations, so a bill paid here is closed everywhere.
+  final DriftOperationsStore ops;
+
+  /// The order to pay (its id, for the lookup). People see the order's
+  /// number ([OpsOrder.number]), never this id.
+  final String orderId;
 
   @override
   State<PaymentScreen> createState() => _PaymentScreenState();
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
+  late final Stream<OpsOrder?> _order$ = widget.ops.watchOrder(widget.orderId);
   _PaymentMethod _method = _PaymentMethod.cash;
   bool _completing = false;
-  // Defaults to the exact total, in rupees (the field the user sees and
-  // types into) — not minor units. Mixing those up here once already
-  // produced a ₹52500 default instead of ₹525; caught by actually
-  // running the screen, not by reading the code.
-  late final _amountController =
-      TextEditingController(text: (_totalMinor / 100).toStringAsFixed(0));
 
-  int get _taxMinor => (widget.order.subtotalMinor * 0.05).round();
-  int get _totalMinor => widget.order.subtotalMinor + _taxMinor;
+  // Rupees (what the cashier types), not paise; filled once the order
+  // total is known.
+  final _amountController = TextEditingController();
+  bool _amountPrefilled = false;
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
+  }
 
   int? get _amountReceivedMinor {
     final rupees = double.tryParse(_amountController.text.trim());
     return rupees == null ? null : (rupees * 100).round();
   }
 
-  int? get _changeDueMinor {
-    final received = _amountReceivedMinor;
-    if (received == null) return null;
-    return received - _totalMinor;
-  }
-
   void _selectMethod(_PaymentMethod m) {
     if (m != _PaymentMethod.cash) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-              '${_methodLabel(m)} needs provider verification, which isn\'t connected yet — cash only for now.')));
+          content: Text('${_methodLabel(m)} needs provider verification, '
+              'which isn\'t connected — take cash here, or record it in '
+              'Operations → POS Billing, where it stays pending '
+              'verification until a manager verifies it.')));
       return;
     }
     setState(() => _method = m);
   }
 
-  Future<void> _completePayment() async {
+  Future<void> _completePayment(OpsOrder order) async {
     final received = _amountReceivedMinor;
-    final change = _changeDueMinor;
-    if (received == null || change == null || change < 0) return;
+    final total = order.grandTotalMinor;
+    if (received == null || received < total) return;
     setState(() => _completing = true);
     try {
-      // Same reasoning as pos_order_screen.dart's _saveOrderAndKot: a
-      // local-database write should never take long, so bound it rather
-      // than leaving the button on "completing" forever if the platform
-      // storage backend is stuck.
-      await widget.paymentService
-          .recordCashPayment(
-              clientOrderId: widget.order.clientOrderId,
-              amountMinor: _totalMinor,
-              receivedMinor: received)
+      // One transaction: payment row + order settled + table released +
+      // All Orders row. Bounded, like the order save: a local write
+      // should never take long.
+      await widget.ops
+          .settleOrder(order.id, 'cash', receivedMinor: received)
           .timeout(const Duration(seconds: 8));
-
-      if (widget.allOrdersStore != null) {
-        final itemsCount =
-            widget.order.lines.fold<int>(0, (sum, l) => sum + l.quantity);
-        final itemsDesc = itemsCount == 1 ? '1 item' : '$itemsCount items';
-        final typeLabel =
-            widget.order.orderType == OrderType.dineIn ? 'Dine In' : 'Takeaway';
-        final tableOrCust = widget.order.tableLabel != null &&
-                widget.order.tableLabel!.isNotEmpty
-            ? 'Table ${widget.order.tableLabel}'
-            : (typeLabel == 'Dine In' ? 'Dine In' : 'Walk-in Customer');
-
-        await widget.allOrdersStore!.insertOrder(
-          AllOrdersRow(
-            orderId: '#${widget.orderNumber}',
-            type: typeLabel,
-            source: 'Walk-in',
-            tableOrCustomer: tableOrCust,
-            itemsLabel: itemsDesc,
-            amountMinor: _totalMinor,
-            status: 'Completed',
-            time: 'Just now',
-          ),
-        );
-      }
-
       if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
       Navigator.of(context).pop(true);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-              'Payment completed — ₹${(_totalMinor / 100).toStringAsFixed(2)}, change ₹${(change / 100).toStringAsFixed(2)}. Order recorded in All Orders!')));
+      messenger.showSnackBar(SnackBar(
+          content: Text('${order.number} paid in cash — ${_rupees(total)}, '
+              'change ${_rupees(received - total)}. Order closed.')));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(e is TimeoutException
                 ? 'Saving is taking too long — the local database may be unavailable. Please try again.'
-                : 'Could not record the payment: $e')));
+                : 'Could not record the payment: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _completing = false);
@@ -158,16 +129,54 @@ class _PaymentScreenState extends State<PaymentScreen> {
       };
 
   @override
-  Widget build(BuildContext context) {
-    final change = _changeDueMinor;
-    final canComplete = change != null && change >= 0;
+  Widget build(BuildContext context) => StreamBuilder<OpsOrder?>(
+      stream: _order$,
+      builder: (context, snap) {
+        if (snap.hasError) {
+          return Scaffold(
+              appBar: AppBar(title: const Text('Payment')),
+              body: Center(
+                  child: Text(
+                      'Could not load the order: ${friendlyError(snap.error!)}')));
+        }
+        final order = snap.data;
+        if (order == null) {
+          return Scaffold(
+              appBar: AppBar(title: const Text('Payment')),
+              body: Center(
+                  child: snap.connectionState == ConnectionState.waiting
+                      ? const CircularProgressIndicator()
+                      : const Text('This order was not found.')));
+        }
+        if (!_amountPrefilled) {
+          _amountPrefilled = true;
+          _amountController.text =
+              (order.grandTotalMinor / 100).toStringAsFixed(0);
+          if (_amountReceivedMinor != null &&
+              _amountReceivedMinor! < order.grandTotalMinor) {
+            _amountController.text =
+                (order.grandTotalMinor / 100).ceil().toString();
+          }
+        }
+        return _buildFor(order);
+      });
+
+  Widget _buildFor(OpsOrder order) {
+    final total = order.grandTotalMinor;
+    final received = _amountReceivedMinor;
+    final change = received == null ? null : received - total;
+    final closed = order.payment != null ||
+        order.status == OpsOrderStatus.settled ||
+        order.status == OpsOrderStatus.cancelled;
+    final canComplete = !closed &&
+        order.lines.isNotEmpty &&
+        change != null &&
+        change >= 0 &&
+        _method == _PaymentMethod.cash;
 
     return Scaffold(
       body: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Expanded(
-            flex: 3,
-            child: _OrderRecap(
-                order: widget.order, orderNumber: widget.orderNumber)),
+        Expanded(flex: 3, child: _OrderRecap(order: order)),
         SizedBox(
           width: 420,
           child: Padding(
@@ -191,6 +200,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ]),
               ]),
               const SizedBox(height: 16),
+              if (closed) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                      color: ViniiColors.amberTint,
+                      borderRadius: BorderRadius.circular(8)),
+                  child: Text(
+                      order.status == OpsOrderStatus.cancelled
+                          ? 'This order was cancelled — it takes no payment.'
+                          : 'Payment already recorded: ${order.paymentLabel}. '
+                              'A payment is never recorded twice.',
+                      style: const TextStyle(
+                          color: ViniiColors.amberSolid,
+                          fontWeight: FontWeight.w600)),
+                ),
+                const SizedBox(height: 16),
+              ],
               GridView.count(
                 shrinkWrap: true,
                 crossAxisCount: 2,
@@ -198,26 +225,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 crossAxisSpacing: 12,
                 childAspectRatio: 1.7,
                 children: [
-                  _MethodTile(
-                      icon: Icons.payments_outlined,
-                      label: 'Cash',
-                      selected: _method == _PaymentMethod.cash,
-                      onTap: () => _selectMethod(_PaymentMethod.cash)),
-                  _MethodTile(
-                      icon: Icons.credit_card,
-                      label: 'Card',
-                      selected: _method == _PaymentMethod.card,
-                      onTap: () => _selectMethod(_PaymentMethod.card)),
-                  _MethodTile(
-                      icon: Icons.qr_code,
-                      label: 'UPI / QR',
-                      selected: _method == _PaymentMethod.upi,
-                      onTap: () => _selectMethod(_PaymentMethod.upi)),
-                  _MethodTile(
-                      icon: Icons.call_split,
-                      label: 'Split Pay',
-                      selected: _method == _PaymentMethod.split,
-                      onTap: () => _selectMethod(_PaymentMethod.split)),
+                  for (final (m, icon) in const [
+                    (_PaymentMethod.cash, Icons.payments_outlined),
+                    (_PaymentMethod.card, Icons.credit_card),
+                    (_PaymentMethod.upi, Icons.qr_code),
+                    (_PaymentMethod.split, Icons.call_split),
+                  ])
+                    _MethodTile(
+                        icon: icon,
+                        label: _methodLabel(m),
+                        selected: _method == m,
+                        onTap: () => _selectMethod(m)),
                 ],
               ),
               const SizedBox(height: 20),
@@ -227,6 +245,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               const SizedBox(height: 6),
               TextField(
                 controller: _amountController,
+                enabled: !closed,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 style:
@@ -240,30 +259,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   style: TextStyle(fontSize: 12, color: Colors.grey)),
               const SizedBox(height: 6),
               Wrap(spacing: 8, runSpacing: 8, children: [
-                _QuickAmountChip(
-                    label: '₹${(_totalMinor / 100).toStringAsFixed(0)} (Exact)',
-                    minor: _totalMinor,
-                    controller: _amountController,
-                    onPicked: () => setState(() {})),
-                _QuickAmountChip(
-                    label: '₹${(_totalMinor / 100 + 100).toStringAsFixed(0)}',
-                    minor: _totalMinor + 10000,
-                    controller: _amountController,
-                    onPicked: () => setState(() {})),
-                _QuickAmountChip(
-                    label: '₹${(_totalMinor / 100 + 300).toStringAsFixed(0)}',
-                    minor: _totalMinor + 30000,
-                    controller: _amountController,
-                    onPicked: () => setState(() {})),
+                for (final (label, minor) in [
+                  ('${_rupees(total, decimals: 0)} (Exact)', total),
+                  ('₹${(total / 100 + 100).toStringAsFixed(0)}', total + 10000),
+                  ('₹${(total / 100 + 300).toStringAsFixed(0)}', total + 30000),
+                ])
+                  _QuickAmountChip(
+                      label: label,
+                      minor: minor,
+                      controller: _amountController,
+                      onPicked: closed ? null : () => setState(() {})),
               ]),
               const SizedBox(height: 16),
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 const Text('Change Due',
                     style: TextStyle(fontWeight: FontWeight.w600)),
-                Text(
-                    change == null
-                        ? '—'
-                        : '₹${(change / 100).toStringAsFixed(2)}',
+                Text(change == null ? '—' : _rupees(change),
                     style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -275,13 +286,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
               SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                      onPressed:
-                          canComplete && !_completing ? _completePayment : null,
+                      onPressed: canComplete && !_completing
+                          ? () => _completePayment(order)
+                          : null,
                       style: FilledButton.styleFrom(
                           backgroundColor: ViniiColors.brandGreen,
                           padding: const EdgeInsets.all(16)),
-                      child: Text(
-                          'Complete Payment ₹${(_totalMinor / 100).toStringAsFixed(2)}',
+                      child: Text('Complete Cash Payment ${_rupees(total)}',
                           style: const TextStyle(
                               color: Colors.black,
                               fontWeight: FontWeight.bold)))),
@@ -289,13 +300,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
               SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                      onPressed: () => ScaffoldMessenger.of(context)
-                          .showSnackBar(const SnackBar(
-                              content: Text(
-                                  'Printing isn\'t wired to hardware yet (Q03).'))),
+                      onPressed: () => showBillPreview(context,
+                          ops: widget.ops,
+                          orderId: order.id,
+                          actorName: widget.ops.actorName),
                       child: const Padding(
                           padding: EdgeInsets.all(12),
-                          child: Text('Print Bill')))),
+                          child: Text('Print Bill (preview)')))),
             ]),
           ),
         ),
@@ -305,12 +316,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
 }
 
 class _OrderRecap extends StatelessWidget {
-  const _OrderRecap({required this.order, required this.orderNumber});
-  final LocalOrder order;
-  final String orderNumber;
+  const _OrderRecap({required this.order});
+  final OpsOrder order;
 
-  int get _taxMinor => (order.subtotalMinor * 0.05).round();
-  int get _totalMinor => order.subtotalMinor + _taxMinor;
+  String _pct(double p) =>
+      p == p.roundToDouble() ? p.round().toString() : p.toStringAsFixed(1);
 
   @override
   Widget build(BuildContext context) {
@@ -323,23 +333,28 @@ class _OrderRecap extends StatelessWidget {
         style: const TextStyle(color: Colors.black87),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            Text(
-                'Order #$orderNumber${order.tableLabel != null ? ' — ${order.tableLabel}' : ''}',
-                style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Flexible(
+              child: Text(
+                  'Order ${order.number}${order.tableLabel != null ? ' — ${order.tableLabel}' : ''}',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.bold)),
+            ),
             const SizedBox(width: 8),
             Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                     color: ViniiColors.greenTint,
                     borderRadius: BorderRadius.circular(6)),
-                child: Text(
-                    order.orderType == OrderType.dineIn
-                        ? 'Dine In'
-                        : 'Takeaway',
+                child: Text(order.channel.label,
                     style: const TextStyle(
                         color: ViniiColors.brandGreen, fontSize: 12))),
           ]),
+          if (order.billNo != null) ...[
+            const SizedBox(height: 4),
+            Text('Bill #${order.billNo}',
+                style: const TextStyle(color: Colors.grey)),
+          ],
           const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.all(16),
@@ -361,7 +376,8 @@ class _OrderRecap extends StatelessWidget {
                             color: ViniiColors.greenSolid,
                             fontWeight: FontWeight.bold)),
                     Expanded(child: Text(line.name)),
-                    Text('₹${(line.totalMinor / 100).toStringAsFixed(0)}'),
+                    Text(_rupees(line.totalMinor,
+                        decimals: line.totalMinor % 100 == 0 ? 0 : 2)),
                   ]),
                 ),
             ]),
@@ -374,9 +390,12 @@ class _OrderRecap extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10)),
             child: Column(children: [
               _totalsRow('Subtotal', order.subtotalMinor),
-              _totalsRow('GST (5%)', _taxMinor),
+              if (order.discountMinor > 0)
+                _totalsRow('Discount (${_pct(order.discountPct)}%)',
+                    -order.discountMinor),
+              _totalsRow('GST (${_pct(order.taxPct)}%)', order.taxMinor),
               const Divider(),
-              _totalsRow('Total Amount', _totalMinor, bold: true),
+              _totalsRow('Total Amount', order.grandTotalMinor, bold: true),
             ]),
           ),
         ]),
@@ -392,7 +411,10 @@ class _OrderRecap extends StatelessWidget {
               style: TextStyle(
                   fontWeight: bold ? FontWeight.bold : FontWeight.normal,
                   fontSize: bold ? 16 : 14)),
-          Text('₹${(minor / 100).toStringAsFixed(bold ? 0 : 2)}',
+          Text(
+              minor < 0
+                  ? '-${_rupees(-minor)}'
+                  : _rupees(minor, decimals: bold && minor % 100 == 0 ? 0 : 2),
               style: TextStyle(
                   fontWeight: bold ? FontWeight.bold : FontWeight.normal,
                   fontSize: bold ? 20 : 14)),
@@ -448,7 +470,7 @@ class _QuickAmountChip extends StatelessWidget {
   final String label;
   final int minor;
   final TextEditingController controller;
-  final VoidCallback onPicked;
+  final VoidCallback? onPicked;
 
   @override
   Widget build(BuildContext context) {
@@ -460,10 +482,12 @@ class _QuickAmountChip extends StatelessWidget {
       selected: isSelected,
       selectedColor: ViniiColors.brandGreen,
       labelStyle: TextStyle(color: isSelected ? Colors.black : null),
-      onSelected: (_) {
-        controller.text = (minor / 100).toStringAsFixed(0);
-        onPicked();
-      },
+      onSelected: onPicked == null
+          ? null
+          : (_) {
+              controller.text = (minor / 100).toStringAsFixed(0);
+              onPicked!();
+            },
     );
   }
 }

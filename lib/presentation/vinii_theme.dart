@@ -17,6 +17,9 @@ class ViniiColors {
 
   // Brand — sampled, exact.
   static const brandGreen = Color(0xFF76EC00);
+  static const emeraldText = Color(0xFF027A48);
+  static const successPillBg = Color(0xFFD1FADF);
+  static const successPillText = Color(0xFF027A48);
 
   // Light theme surfaces — sampled.
   static const lightBg = Color(0xFFFFFFFF);

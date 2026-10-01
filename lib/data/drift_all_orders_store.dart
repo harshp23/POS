@@ -3,6 +3,13 @@ import 'package:drift/drift.dart';
 import 'app_database.dart';
 import 'local_all_orders_catalog.dart';
 
+/// The device-only `all_orders_table` summary (not synced). It is kept up
+/// to date from the real orders by DriftOperationsStore (and after a sync
+/// pull); no screen edits it any more — the All Orders screen reads the
+/// orders themselves, and corrections go through the order (cancel / void
+/// / discount with a reason). The write methods below remain for the
+/// store's own tests and must not be wired to UI that rewrites amounts,
+/// statuses or deletes orders.
 class DriftAllOrdersStore {
   DriftAllOrdersStore(this.db);
   final AppDatabase db;

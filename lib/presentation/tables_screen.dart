@@ -1,10 +1,19 @@
 // Rebuilt 1:1 from v1/POS-TABLES-DEFAULT.png and v1/POS-TABLES-V3.png
-// with full SQLite CRUD support via DriftTableStore.
+// with SQLite CRUD via DriftTableStore. Occupied cards show the table's
+// real open order (elapsed since seating, order total, payment state)
+// from the Operations store; reserved cards show the linked reservation.
+// A table holding an open order cannot be freed or deleted — the store
+// refuses and the reason is shown.
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../data/drift_operations_store.dart';
 import '../data/drift_table_store.dart';
+import '../domain/operations.dart';
 import '../domain/restaurant_table.dart';
+import 'operations/ops_pickers.dart';
 import 'vinii_theme.dart';
 
 class TablesScreen extends StatefulWidget {
@@ -13,9 +22,14 @@ class TablesScreen extends StatefulWidget {
     this.tableStore,
     required this.onOpenTable,
     required this.onStartOrder,
+    this.ops,
   });
 
   final DriftTableStore? tableStore;
+
+  /// Order / reservation data for the cards. Built on [tableStore]'s
+  /// database when null.
+  final DriftOperationsStore? ops;
 
   /// Table has an active order — go to it (occupied cards).
   final void Function(RestaurantTable table) onOpenTable;
@@ -29,8 +43,73 @@ class TablesScreen extends StatefulWidget {
 
 enum _ZoneFilter { all, indoor, outdoor, privateDining }
 
+/// What a card shows beyond the table row itself.
+class _TableInfo {
+  const _TableInfo({this.floor, this.order, this.reservation});
+  final OpsTable? floor;
+  final OpsOrder? order;
+  final OpsReservation? reservation;
+}
+
 class _TablesScreenState extends State<TablesScreen> {
   _ZoneFilter _filter = _ZoneFilter.all;
+  final _subs = <StreamSubscription<Object?>>[];
+  List<RestaurantTable> _tables = const [];
+  Map<String, OpsTable> _floor = const {};
+  Map<String, OpsOrder> _orders = const {};
+  List<OpsReservation> _reservations = const [];
+  Timer? _ticker;
+  DateTime _now = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    final store = widget.tableStore;
+    if (store == null) return;
+    final ops = widget.ops ?? DriftOperationsStore(store.db);
+    _subs
+      ..add(store.watchTables().listen((t) {
+        if (mounted) setState(() => _tables = t);
+      }))
+      ..add(ops.watchTables().listen((t) {
+        if (mounted) setState(() => _floor = {for (final x in t) x.id: x});
+      }))
+      ..add(ops.watchOrders(openOnly: true).listen((o) {
+        if (mounted) setState(() => _orders = {for (final x in o) x.id: x});
+      }))
+      ..add(ops.watchReservations().listen((r) {
+        if (mounted) setState(() => _reservations = r);
+      }));
+    _ticker = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() => _now = DateTime.now());
+    });
+  }
+
+  @override
+  void dispose() {
+    for (final s in _subs) {
+      s.cancel();
+    }
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  _TableInfo _infoFor(RestaurantTable t) {
+    final floor = _floor[t.id];
+    final orderId = floor?.currentOrderId;
+    // The reservation linked to this table that is still to come.
+    final upcoming = _reservations
+        .where((r) =>
+            r.tableId == t.id &&
+            (r.status == ReservationStatus.confirmed ||
+                r.status == ReservationStatus.pending))
+        .toList()
+      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    return _TableInfo(
+        floor: floor,
+        order: orderId == null ? null : _orders[orderId],
+        reservation: upcoming.firstOrNull);
+  }
 
   List<RestaurantTable> _filterTables(List<RestaurantTable> all) {
     final zone = switch (_filter) {
@@ -43,19 +122,43 @@ class _TablesScreenState extends State<TablesScreen> {
     return all.where((t) => t.zone == zone).toList();
   }
 
+  /// Runs a table-store change; a refusal (e.g. the table still holds an
+  /// open order) is shown instead of failing silently.
+  Future<void> _run(Future<void> Function() op, {String? done}) async {
+    try {
+      await op();
+      if (mounted && done != null) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(done)));
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          backgroundColor: ViniiColors.redSolid,
+          content: Text(e is StateError || e is ArgumentError
+              ? friendlyError(e)
+              : 'Could not save: ${friendlyError(e)}')));
+    }
+  }
+
   void _openAddEditDialog(BuildContext context, RestaurantTable? existing) {
     showDialog(
       context: context,
       builder: (ctx) => _AddEditTableDialog(
         existing: existing,
         onSave: (table) async {
-          if (widget.tableStore != null) {
+          final store = widget.tableStore;
+          if (store == null) return true;
+          var ok = false;
+          await _run(() async {
             if (existing == null) {
-              await widget.tableStore!.insertTable(table);
+              await store.insertTable(table);
             } else {
-              await widget.tableStore!.updateTable(table);
+              await store.updateTable(table);
             }
-          }
+            ok = true;
+          });
+          return ok;
         },
       ),
     );
@@ -77,8 +180,10 @@ class _TablesScreenState extends State<TablesScreen> {
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
               Navigator.pop(ctx);
-              if (widget.tableStore != null) {
-                await widget.tableStore!.deleteTable(table.id);
+              final store = widget.tableStore;
+              if (store != null) {
+                await _run(() => store.deleteTable(table.id),
+                    done: 'Table ${table.label} deleted');
               }
             },
             child: const Text('Delete'),
@@ -88,25 +193,14 @@ class _TablesScreenState extends State<TablesScreen> {
     );
   }
 
-  void _changeStatus(RestaurantTable table, TableStatus newStatus) async {
-    if (widget.tableStore != null) {
-      await widget.tableStore!.updateStatus(table.id, newStatus);
-    }
+  Future<void> _changeStatus(RestaurantTable table, TableStatus newStatus) {
+    final store = widget.tableStore;
+    if (store == null) return Future.value();
+    return _run(() => store.updateStatus(table.id, newStatus));
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (widget.tableStore != null) {
-      return StreamBuilder<List<RestaurantTable>>(
-        stream: widget.tableStore!.watchTables(),
-        builder: (context, snapshot) {
-          final tables = snapshot.data ?? const [];
-          return _buildContent(context, tables);
-        },
-      );
-    }
-    return _buildContent(context, const []);
-  }
+  Widget build(BuildContext context) => _buildContent(context, _tables);
 
   Widget _buildContent(BuildContext context, List<RestaurantTable> tables) {
     final visible = _filterTables(tables);
@@ -119,6 +213,34 @@ class _TablesScreenState extends State<TablesScreen> {
     final cleaning =
         tables.where((t) => t.status == TableStatus.cleaning).length;
 
+    final counts = Wrap(children: [
+      Text('${tables.length} Total  •  '),
+      Text('$occupied Occupied  •  ',
+          style: const TextStyle(
+              color: ViniiColors.blueSolid, fontWeight: FontWeight.w600)),
+      Text('$available Available  •  ',
+          style: const TextStyle(
+              color: ViniiColors.greenSolid, fontWeight: FontWeight.w600)),
+      Text('$reserved Reserved  •  ',
+          style: const TextStyle(
+              color: ViniiColors.amberSolid, fontWeight: FontWeight.w600)),
+      Text('$cleaning Cleaning'),
+    ]);
+    final title = Text('Tables',
+        style: Theme.of(context)
+            .textTheme
+            .headlineSmall
+            ?.copyWith(fontWeight: FontWeight.bold));
+    final addButton = FilledButton.icon(
+      icon: const Icon(Icons.add, size: 18),
+      label: const Text('Add Table'),
+      style: FilledButton.styleFrom(
+        backgroundColor: ViniiColors.brandGreen,
+        foregroundColor: Colors.black,
+      ),
+      onPressed: () => _openAddEditDialog(context, null),
+    );
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isNarrow = constraints.maxWidth < 700;
@@ -130,28 +252,9 @@ class _TablesScreenState extends State<TablesScreen> {
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             if (isNarrow) ...[
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Tables',
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.bold)),
+                title,
                 const SizedBox(height: 4),
-                Wrap(children: [
-                  Text('${tables.length} Total  •  '),
-                  Text('$occupied Occupied  •  ',
-                      style: const TextStyle(
-                          color: ViniiColors.blueSolid,
-                          fontWeight: FontWeight.w600)),
-                  Text('$available Available  •  ',
-                      style: const TextStyle(
-                          color: ViniiColors.greenSolid,
-                          fontWeight: FontWeight.w600)),
-                  Text('$reserved Reserved  •  ',
-                      style: const TextStyle(
-                          color: ViniiColors.amberSolid,
-                          fontWeight: FontWeight.w600)),
-                  Text('$cleaning Cleaning'),
-                ]),
+                counts,
               ]),
               const SizedBox(height: 12),
               Wrap(
@@ -162,15 +265,7 @@ class _TablesScreenState extends State<TablesScreen> {
                   _ZoneFilterBar(
                       value: _filter,
                       onChanged: (v) => setState(() => _filter = v)),
-                  FilledButton.icon(
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Add Table'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: ViniiColors.brandGreen,
-                      foregroundColor: Colors.black,
-                    ),
-                    onPressed: () => _openAddEditDialog(context, null),
-                  ),
+                  addButton,
                 ],
               ),
             ] else ...[
@@ -178,44 +273,13 @@ class _TablesScreenState extends State<TablesScreen> {
                 Expanded(
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Tables',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
-                                ?.copyWith(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        Wrap(children: [
-                          Text('${tables.length} Total  •  '),
-                          Text('$occupied Occupied  •  ',
-                              style: const TextStyle(
-                                  color: ViniiColors.blueSolid,
-                                  fontWeight: FontWeight.w600)),
-                          Text('$available Available  •  ',
-                              style: const TextStyle(
-                                  color: ViniiColors.greenSolid,
-                                  fontWeight: FontWeight.w600)),
-                          Text('$reserved Reserved  •  ',
-                              style: const TextStyle(
-                                  color: ViniiColors.amberSolid,
-                                  fontWeight: FontWeight.w600)),
-                          Text('$cleaning Cleaning'),
-                        ]),
-                      ]),
+                      children: [title, const SizedBox(height: 4), counts]),
                 ),
                 _ZoneFilterBar(
                     value: _filter,
                     onChanged: (v) => setState(() => _filter = v)),
                 const SizedBox(width: 12),
-                FilledButton.icon(
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add Table'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: ViniiColors.brandGreen,
-                    foregroundColor: Colors.black,
-                  ),
-                  onPressed: () => _openAddEditDialog(context, null),
-                ),
+                addButton,
               ]),
             ],
             const SizedBox(height: 20),
@@ -284,6 +348,8 @@ class _TablesScreenState extends State<TablesScreen> {
                               itemCount: visible.length,
                               itemBuilder: (context, i) => _TableCard(
                                 table: visible[i],
+                                info: _infoFor(visible[i]),
+                                now: _now,
                                 onOpen: widget.onOpenTable,
                                 onStart: widget.onStartOrder,
                                 onEdit: (t) => _openAddEditDialog(context, t),
@@ -335,6 +401,8 @@ class _ZoneFilterBar extends StatelessWidget {
 class _TableCard extends StatelessWidget {
   const _TableCard({
     required this.table,
+    required this.info,
+    required this.now,
     required this.onOpen,
     required this.onStart,
     required this.onEdit,
@@ -343,11 +411,13 @@ class _TableCard extends StatelessWidget {
   });
 
   final RestaurantTable table;
+  final _TableInfo info;
+  final DateTime now;
   final void Function(RestaurantTable) onOpen;
   final void Function(RestaurantTable) onStart;
   final void Function(RestaurantTable) onEdit;
   final void Function(RestaurantTable) onDelete;
-  final void Function(RestaurantTable, TableStatus) onUpdateStatus;
+  final Future<void> Function(RestaurantTable, TableStatus) onUpdateStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -357,6 +427,7 @@ class _TableCard extends StatelessWidget {
       TableStatus.reserved => (ViniiColors.amberSolid, ViniiColors.amberSolid),
       TableStatus.cleaning => (Colors.grey.shade300, ViniiColors.graySolid),
     };
+    final guests = info.floor?.guests ?? table.guestCount;
 
     return Container(
       decoration: BoxDecoration(
@@ -365,16 +436,19 @@ class _TableCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text(table.label,
-              style:
-                  const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          Row(children: [
+          Flexible(
+            child: Text(table.label,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          ),
+          Row(mainAxisSize: MainAxisSize.min, children: [
             if (table.status != TableStatus.cleaning)
               Row(children: [
                 const Icon(Icons.person_outline, size: 14, color: Colors.grey),
                 Text(
-                    table.status == TableStatus.occupied
-                        ? ' ${table.guestCount ?? table.seats} Guests'
+                    table.status == TableStatus.occupied && guests != null
+                        ? ' $guests Guests'
                         : ' ${table.seats} seats',
                     style: const TextStyle(fontSize: 12, color: Colors.grey)),
               ])
@@ -389,19 +463,12 @@ class _TableCard extends StatelessWidget {
                 switch (val) {
                   case 'edit':
                     onEdit(table);
-                    break;
                   case 'delete':
                     onDelete(table);
-                    break;
                   case 'status_available':
                     onUpdateStatus(table, TableStatus.available);
-                    break;
                   case 'status_cleaning':
                     onUpdateStatus(table, TableStatus.cleaning);
-                    break;
-                  case 'status_occupied':
-                    onUpdateStatus(table, TableStatus.occupied);
-                    break;
                 }
               },
               itemBuilder: (ctx) => [
@@ -456,14 +523,16 @@ class _TableCard extends StatelessWidget {
           ]),
         ]),
         const SizedBox(height: 10),
-        Expanded(child: _CardBody(table: table, accent: accent)),
+        Expanded(
+            child:
+                _CardBody(table: table, info: info, now: now, accent: accent)),
         SizedBox(
           width: double.infinity,
           child: switch (table.status) {
             TableStatus.occupied => OutlinedButton(
                 onPressed: () => onOpen(table),
                 style: OutlinedButton.styleFrom(foregroundColor: accent),
-                child: const Text('Open Order')),
+                child: Text(info.order == null ? 'Start Order' : 'Open Order')),
             TableStatus.available => OutlinedButton(
                 onPressed: () => onStart(table),
                 style: OutlinedButton.styleFrom(
@@ -486,29 +555,46 @@ class _TableCard extends StatelessWidget {
 }
 
 class _CardBody extends StatelessWidget {
-  const _CardBody({required this.table, required this.accent});
+  const _CardBody(
+      {required this.table,
+      required this.info,
+      required this.now,
+      required this.accent});
   final RestaurantTable table;
+  final _TableInfo info;
+  final DateTime now;
   final Color accent;
+
+  Widget _kv(String k, String v) =>
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Text(k, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Flexible(
+          child: Text(v,
+              overflow: TextOverflow.ellipsis,
+              style:
+                  const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+        ),
+      ]);
 
   @override
   Widget build(BuildContext context) {
     switch (table.status) {
       case TableStatus.occupied:
+        final o = info.order;
+        final mins = info.floor?.elapsedMinutes(now);
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            const Text('Elapsed',
-                style: TextStyle(fontSize: 12, color: Colors.grey)),
-            Text('${table.elapsedMinutes ?? 0} min',
-                style:
-                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-          ]),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            const Text('Order Total',
-                style: TextStyle(fontSize: 12, color: Colors.grey)),
-            Text('₹${((table.orderTotalMinor ?? 0) / 100).toStringAsFixed(0)}',
-                style:
-                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-          ]),
+          _kv('Elapsed', mins == null ? '—' : '$mins min'),
+          _kv(
+              'Order Total',
+              o == null
+                  ? 'No order yet'
+                  : '₹${(o.grandTotalMinor / 100).toStringAsFixed(0)}'),
+          if (o != null)
+            _kv(
+                o.status == OpsOrderStatus.billed ? 'Bill' : 'Kitchen',
+                o.status == OpsOrderStatus.billed
+                    ? 'Payment pending'
+                    : o.kitchenState.label),
         ]);
       case TableStatus.available:
         return Row(children: [
@@ -522,12 +608,26 @@ class _CardBody extends StatelessWidget {
                   color: accent, fontWeight: FontWeight.w600, fontSize: 13)),
         ]);
       case TableStatus.reserved:
+        // The linked reservation if there is one, else what the table row
+        // itself holds; no time is shown when none is known.
+        final r = info.reservation;
+        final name = r?.guestName ?? table.reservedByName;
+        final at = r?.dateTime ?? table.reservedAt;
+        final line = [
+          if (name != null && name.isNotEmpty) name,
+          if (at != null) formatClock(at),
+        ].join(' · ');
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('${table.reservedByName ?? "Guest"} · 7:30 PM',
-              style: TextStyle(
-                  color: accent, fontWeight: FontWeight.w600, fontSize: 13)),
-          const Text('Reserved',
-              style: TextStyle(fontSize: 12, color: Colors.grey)),
+          if (line.isNotEmpty)
+            Text(line,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    color: accent, fontWeight: FontWeight.w600, fontSize: 13)),
+          Text(
+              r == null
+                  ? 'Reserved'
+                  : 'Reserved · ${r.guests} guest${r.guests == 1 ? '' : 's'}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ]);
       case TableStatus.cleaning:
         return const Text('Cleaning', style: TextStyle(color: Colors.grey));
@@ -538,7 +638,9 @@ class _CardBody extends StatelessWidget {
 class _AddEditTableDialog extends StatefulWidget {
   const _AddEditTableDialog({required this.existing, required this.onSave});
   final RestaurantTable? existing;
-  final Future<void> Function(RestaurantTable) onSave;
+
+  /// Returns false when the store refused the change (the dialog stays).
+  final Future<bool> Function(RestaurantTable) onSave;
 
   @override
   State<_AddEditTableDialog> createState() => _AddEditTableDialogState();
@@ -622,9 +724,9 @@ class _AddEditTableDialogState extends State<_AddEditTableDialog> {
             const SizedBox(height: 16),
             DropdownButtonFormField<TableStatus>(
               initialValue: _status,
-              decoration: const InputDecoration(
-                labelText: 'Initial Status',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: isNew ? 'Initial Status' : 'Status',
+                border: const OutlineInputBorder(),
               ),
               items: const [
                 DropdownMenuItem(
@@ -675,8 +777,13 @@ class _AddEditTableDialogState extends State<_AddEditTableDialog> {
                     reservedAt: widget.existing?.reservedAt,
                   );
 
-                  await widget.onSave(table);
-                  if (mounted) navigator.pop();
+                  final ok = await widget.onSave(table);
+                  if (!mounted) return;
+                  if (ok) {
+                    navigator.pop();
+                  } else {
+                    setState(() => _saving = false);
+                  }
                 },
           child: _saving
               ? const SizedBox(

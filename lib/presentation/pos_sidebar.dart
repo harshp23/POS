@@ -16,7 +16,7 @@ enum PosModule {
   takeaway,
   delivery,
   online,
-  menu
+  menu,
 }
 
 const _posModuleIcons = <PosModule, IconData>{
@@ -48,13 +48,21 @@ class PosSidebar extends StatelessWidget {
       required this.onSelect,
       required this.onNewOrder,
       required this.staffName,
-      required this.branchName});
+      required this.branchName,
+      this.onSignOut,
+      this.modules = PosModule.values});
 
   final PosModule selected;
   final ValueChanged<PosModule> onSelect;
-  final VoidCallback onNewOrder;
+
+  /// Null hides "New Order" (the role cannot take orders).
+  final VoidCallback? onNewOrder;
+
+  /// The modules this staff member's role opens, in sidebar order.
+  final List<PosModule> modules;
   final String staffName;
   final String branchName;
+  final VoidCallback? onSignOut;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -86,22 +94,23 @@ class PosSidebar extends StatelessWidget {
             const Icon(Icons.menu, color: Colors.white38, size: 18),
           ]),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                  onPressed: onNewOrder,
-                  style: FilledButton.styleFrom(
-                      backgroundColor: ViniiColors.brandGreen,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8))),
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('New Order',
-                      style: TextStyle(fontWeight: FontWeight.w700)))),
-        ),
+        if (onNewOrder != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                    onPressed: onNewOrder,
+                    style: FilledButton.styleFrom(
+                        backgroundColor: ViniiColors.brandGreen,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8))),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('New Order',
+                        style: TextStyle(fontWeight: FontWeight.w700)))),
+          ),
         const SizedBox(height: 22),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
@@ -123,7 +132,7 @@ class PosSidebar extends StatelessWidget {
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
-              for (final module in PosModule.values)
+              for (final module in modules)
                 SidebarNavItem(
                     icon: _posModuleIcons[module]!,
                     label: _posModuleLabels[module]!,
@@ -165,6 +174,12 @@ class PosSidebar extends StatelessWidget {
                       style:
                           const TextStyle(color: Colors.white38, fontSize: 11)),
                 ])),
+            if (onSignOut != null)
+              IconButton(
+                icon: const Icon(Icons.logout, size: 16, color: Colors.white54),
+                tooltip: 'Sign Out',
+                onPressed: onSignOut,
+              ),
           ]),
         ),
       ]));

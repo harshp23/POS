@@ -9,9 +9,11 @@ import 'package:proviyaa_pos/data/drift_all_orders_store.dart';
 import 'package:proviyaa_pos/data/drift_kitchen_store.dart';
 import 'package:proviyaa_pos/data/drift_local_store.dart';
 import 'package:proviyaa_pos/data/drift_menu_store.dart';
+import 'package:proviyaa_pos/data/drift_operations_store.dart';
 import 'package:proviyaa_pos/data/drift_payment_store.dart';
 import 'package:proviyaa_pos/data/drift_table_store.dart';
 import 'package:proviyaa_pos/domain/menu.dart';
+import 'package:proviyaa_pos/domain/operations.dart';
 import 'package:proviyaa_pos/domain/restaurant_table.dart';
 import 'package:proviyaa_pos/presentation/pos_order_screen.dart';
 
@@ -131,17 +133,87 @@ void main() {
       await tester.tap(saveHoldBtn);
       await tester.pumpAndSettle();
 
+      // Held = one real order (from the device's ORD- sequence) with no
+      // KOT, linked to its table and listed as held.
+      final ops = DriftOperationsStore(db);
+      final held = await ops.watchHeldOrders().first;
+      expect(held, hasLength(1));
+      final heldOrder = held.single;
+      expect(heldOrder.id, startsWith('ORD-'));
+      expect(heldOrder.channel, OpsChannel.dineIn);
+      expect(heldOrder.tableLabel, 'T5');
+      expect(heldOrder.sentToKitchen, isFalse);
+      expect(heldOrder.lines.single.name, 'Paneer Butter Masala');
+      expect(heldOrder.grandTotalMinor, 33600); // ₹320 + 5% GST
+      expect(await ops.getKots(), isEmpty, reason: 'no KOT on hold');
+
       final allOrders = await allOrdersStore.getAllOrders();
       expect(allOrders.length, 1);
-      final heldOrder = allOrders.first;
-      expect(heldOrder.status, 'Hold');
-      expect(heldOrder.type, 'Dine In');
-      expect(heldOrder.tableOrCustomer, 'Table T5');
-      expect(heldOrder.amountMinor, greaterThan(0));
+      expect(allOrders.first.orderId, heldOrder.id);
+      expect(allOrders.first.status, 'Held');
+      expect(allOrders.first.amountMinor, greaterThan(0));
 
       final tablesAfter = await tableStore.getAllTables();
       expect(tablesAfter.first.status, TableStatus.occupied);
-      expect(tablesAfter.first.orderTotalMinor, greaterThan(0));
+      expect((await ops.getTable('T5'))!.currentOrderId, heldOrder.id);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('a held order resumes from its table and Send KOT sends it',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1280, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      const table = RestaurantTable(
+          id: 'T6',
+          label: 'T6',
+          seats: 4,
+          zone: TableZone.indoor,
+          status: TableStatus.available);
+      await tableStore.insertTable(table);
+      final ops = DriftOperationsStore(db);
+      final id = await ops.placeOrder(
+          channel: OpsChannel.dineIn,
+          tableId: 'T6',
+          lines: const [
+            OpsOrderLine(
+                itemId: 'paneer-butter-masala',
+                name: 'Paneer Butter Masala',
+                unitMinor: 32000,
+                quantity: 1)
+          ],
+          sendToKitchen: false);
+
+      await tester.pumpWidget(MaterialApp(
+          home: PosOrderScreen(
+              orderService: orderService,
+              kitchenService: kitchenService,
+              paymentService: paymentService,
+              allOrdersStore: allOrdersStore,
+              tableStore: tableStore,
+              menuStore: menuStore,
+              locationId: 'demo-loc',
+              table: table)));
+      await tester.pumpAndSettle();
+
+      // Opening the table loads its open (held) order instead of a new one.
+      expect(find.textContaining(id), findsWidgets);
+      expect(find.text('SAVED (NOT SENT)'), findsOneWidget);
+
+      // Add one more item and send: one KOT for the order.
+      await tester.tap(find.text('Paneer Butter Masala').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Send KOT'));
+      await tester.pumpAndSettle();
+
+      final o = (await ops.getOrder(id))!;
+      expect(o.lines.single.quantity, 2);
+      expect(o.sentToKitchen, isTrue);
+      expect(
+          (await ops.getKots()).where((k) => k.order.id == id), hasLength(1));
+      expect(await ops.watchHeldOrders().first, isEmpty);
+      expect((await ops.getOrders()).length, 1, reason: 'no second order');
 
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();

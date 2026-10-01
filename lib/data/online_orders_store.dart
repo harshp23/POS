@@ -45,7 +45,10 @@ abstract class OnlineOrdersStore {
   Stream<OnlineOrdersState> watchState();
   Stream<List<OnlineOrderRow>> watchOrders();
   Future<List<OnlineOrderRow>> getOrders();
-  Future<void> insertOrder(OnlineOrderRow order);
+
+  /// Saves a new order and returns the row as stored — with the reference
+  /// people read ([OnlineOrderRow.displayId]) that the store assigned.
+  Future<OnlineOrderRow> insertOrder(OnlineOrderRow order);
   Future<void> updateStatus(
       String orderId, String newStatus, String newActionLabel);
   Future<void> deleteOrder(String orderId);
@@ -94,10 +97,38 @@ class InMemoryOnlineOrdersStore implements OnlineOrdersStore {
     return _ordersById.values.toList();
   }
 
+  /// An order without an [OnlineOrderRow.orderId] gets a readable local
+  /// reference (e.g. `ZOM-1001`); the platform is always stored by its full
+  /// name ('Zomato', not 'Z').
   @override
-  Future<void> insertOrder(OnlineOrderRow order) async {
-    _ordersById[order.orderId] = order;
+  Future<OnlineOrderRow> insertOrder(OnlineOrderRow order) async {
+    var row = order.copyWith(
+        platform: OnlineOrderRow.normalizePlatform(order.platform));
+    if (row.orderId.trim().isEmpty) {
+      final ref = _nextLocalRef(row.platformName);
+      row = row.copyWith(orderId: ref, displayId: ref);
+    }
+    _ordersById[row.orderId] = row;
     _emit();
+    return row;
+  }
+
+  int _localSeq = 1000;
+
+  String _nextLocalRef(String platform) {
+    const prefixes = {
+      'Zomato': 'ZOM',
+      'Swiggy': 'SWG',
+      'Website': 'WEB',
+      'One Latur': 'OL',
+    };
+    final prefix = prefixes[platform] ?? 'ONL';
+    String ref;
+    do {
+      _localSeq++;
+      ref = '$prefix-$_localSeq';
+    } while (_ordersById.containsKey(ref));
+    return ref;
   }
 
   @override

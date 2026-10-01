@@ -31,8 +31,6 @@ void main() {
         config: const AppConfig(
           appEnv: 'local',
           dataMode: 'local_demo',
-          supabaseUrl: '',
-          supabasePublishableKey: '',
           apiBaseUrl: '',
           syncEnabled: false,
         ),
@@ -41,11 +39,13 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // The app now opens inside the persistent PosShell (sidebar + top
-    // bar), defaulted to the Dine In board — rebuilt 1:1 from
-    // v1/POS-DINE-IN-V3.png, the explicit source-of-truth reference for
-    // the application shell (see docs/JOURNAL.md).
-    expect(find.text('VINII POS'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).first, 'cashier@onelatur.com');
+    await tester.tap(find.text('Sign In'));
+    await tester.pumpAndSettle();
+
+    // The app opens inside the persistent PosShell (sidebar + top
+    // bar), defaulted to the Dine In board
+    expect(find.text('VINII POS'), findsWidgets);
     expect(find.text('Dine In Orders'), findsOneWidget);
     expect(find.text('T1'), findsOneWidget);
     expect(find.text('Rahul Sharma'), findsOneWidget);
