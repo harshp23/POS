@@ -25,3 +25,6 @@ service-account*.json
 
 # dependencies (any package)
 node_modules/
+
+# Proviyaa master-admin lives in its own repository
+master-admin/
