@@ -1,0 +1,2094 @@
+{
+  "contract_version": 1,
+  "drift_schema_version": 7,
+  "tables": [
+    {
+      "local_table": "menu_categories_table",
+      "module": "master",
+      "resource": "menu-categories",
+      "primary_key": [
+        "id"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": {
+            "now": true
+          }
+        }
+      ]
+    },
+    {
+      "local_table": "menu_items_table",
+      "module": "master",
+      "resource": "menu-items",
+      "primary_key": [
+        "id"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "category_id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "price_minor",
+          "type": "int",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "is_veg",
+          "type": "bool",
+          "nullable": false,
+          "default": {
+            "value": true
+          }
+        },
+        {
+          "name": "is_bestseller",
+          "type": "bool",
+          "nullable": false,
+          "default": {
+            "value": false
+          }
+        },
+        {
+          "name": "available",
+          "type": "bool",
+          "nullable": false,
+          "default": {
+            "value": true
+          }
+        },
+        {
+          "name": "unavailable_reason",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": {
+            "now": true
+          }
+        },
+        {
+          "name": "sku",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "hsn",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "food_cost_minor",
+          "type": "int",
+          "nullable": false,
+          "default": {
+            "value": 0
+          }
+        },
+        {
+          "name": "channels",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": "POS"
+          }
+        },
+        {
+          "name": "kitchen_station",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "menu_status",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": "Active"
+          }
+        },
+        {
+          "name": "availability_label",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": "In Stock"
+          }
+        },
+        {
+          "name": "image_url",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "diet_type",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": "veg"
+          }
+        },
+        {
+          "name": "details_json",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": "{}"
+          }
+        }
+      ]
+    },
+    {
+      "local_table": "offers_table",
+      "module": "master",
+      "resource": "offers",
+      "primary_key": [
+        "id"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "campaign_type",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "discount_rule",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "min_order",
+          "type": "real",
+          "nullable": false,
+          "default": {
+            "value": 0.0
+          }
+        },
+        {
+          "name": "max_discount",
+          "type": "real",
+          "nullable": false,
+          "default": {
+            "value": 0.0
+          }
+        },
+        {
+          "name": "start_date",
+          "type": "timestamp",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "end_date",
+          "type": "timestamp",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "channels",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "linked_items",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "usage_count",
+          "type": "int",
+          "nullable": false,
+          "default": {
+            "value": 0
+          }
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": {
+            "now": true
+          }
+        }
+      ]
+    },
+    {
+      "local_table": "media_assets_table",
+      "module": "master",
+      "resource": "media-assets",
+      "primary_key": [
+        "id"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "file_name",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "file_type",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "size_bytes",
+          "type": "int",
+          "nullable": false,
+          "default": {
+            "value": 0
+          }
+        },
+        {
+          "name": "folder",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "usage_label",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "image_url",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "bytes",
+          "type": "blob",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "archived",
+          "type": "bool",
+          "nullable": false,
+          "default": {
+            "value": false
+          }
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": {
+            "now": true
+          }
+        }
+      ]
+    },
+    {
+      "local_table": "suppliers_table",
+      "module": "master",
+      "resource": "suppliers",
+      "primary_key": [
+        "id"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "legal_name",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "contact_person",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "gstin",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "city",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "rating",
+          "type": "real",
+          "nullable": false,
+          "default": {
+            "value": 0.0
+          }
+        },
+        {
+          "name": "payment_terms",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": "Net 15 Days"
+          }
+        },
+        {
+          "name": "active",
+          "type": "bool",
+          "nullable": false,
+          "default": {
+            "value": true
+          }
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": {
+            "now": true
+          }
+        }
+      ]
+    },
+    {
+      "local_table": "raw_materials_table",
+      "module": "master",
+      "resource": "raw-materials",
+      "primary_key": [
+        "id"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "unit",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "stock_qty",
+          "type": "real",
+          "nullable": false,
+          "default": {
+            "value": 0.0
+          }
+        },
+        {
+          "name": "reorder_level",
+          "type": "real",
+          "nullable": false,
+          "default": {
+            "value": 0.0
+          }
+        },
+        {
+          "name": "max_capacity",
+          "type": "real",
+          "nullable": false,
+          "default": {
+            "value": 0.0
+          }
+        },
+        {
+          "name": "purchase_cost",
+          "type": "real",
+          "nullable": false,
+          "default": {
+            "value": 0.0
+          }
+        },
+        {
+          "name": "last_purchase_price",
+          "type": "real",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "preferred_supplier_id",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "hsn",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "emoji",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": "📦"
+          }
+        },
+        {
+          "name": "lead_time_days",
+          "type": "int",
+          "nullable": false,
+          "default": {
+            "value": 2
+          }
+        },
+        {
+          "name": "active",
+          "type": "bool",
+          "nullable": false,
+          "default": {
+            "value": true
+          }
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": {
+            "now": true
+          }
+        }
+      ]
+    },
+    {
+      "local_table": "supplier_prices_table",
+      "module": "master",
+      "resource": "supplier-prices",
+      "primary_key": [
+        "id"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "ingredient_name",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "material_id",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "emoji",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": "📦"
+          }
+        },
+        {
+          "name": "linked_to",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "supplier_id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "unit",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "last_price",
+          "type": "real",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "current_price",
+          "type": "real",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "lowest_week",
+          "type": "real",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "priority",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": "Medium"
+          }
+        },
+        {
+          "name": "sku_id",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "approved",
+          "type": "bool",
+          "nullable": false,
+          "default": {
+            "value": false
+          }
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": {
+            "now": true
+          }
+        }
+      ]
+    },
+    {
+      "local_table": "recipes_table",
+      "module": "master",
+      "resource": "recipes",
+      "primary_key": [
+        "id"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "version",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": "v1.0"
+          }
+        },
+        {
+          "name": "linked_menu_item_id",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "linked_menu_item_name",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "portion",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "target_price",
+          "type": "real",
+          "nullable": false,
+          "default": {
+            "value": 0.0
+          }
+        },
+        {
+          "name": "labor_cost",
+          "type": "real",
+          "nullable": false,
+          "default": {
+            "value": 0.0
+          }
+        },
+        {
+          "name": "packaging_cost",
+          "type": "real",
+          "nullable": false,
+          "default": {
+            "value": 0.0
+          }
+        },
+        {
+          "name": "trial_result",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": "Pending"
+          }
+        },
+        {
+          "name": "training_done",
+          "type": "int",
+          "nullable": false,
+          "default": {
+            "value": 0
+          }
+        },
+        {
+          "name": "training_total",
+          "type": "int",
+          "nullable": false,
+          "default": {
+            "value": 0
+          }
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": "Draft"
+          }
+        },
+        {
+          "name": "prep_method",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "allergens",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "active_channels",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": {
+            "now": true
+          }
+        }
+      ]
+    },
+    {
+      "local_table": "recipe_lines_table",
+      "module": "master",
+      "resource": "recipe-lines",
+      "primary_key": [
+        "id"
+      ],
+      "unique_keys": [],
+      "auto_increment": "id",
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "recipe_id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "material_id",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "qty",
+          "type": "real",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "unit",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "wastage_pct",
+          "type": "real",
+          "nullable": false,
+          "default": {
+            "value": 0.0
+          }
+        },
+        {
+          "name": "fallback_unit_cost",
+          "type": "real",
+          "nullable": false,
+          "default": {
+            "value": 0.0
+          }
+        },
+        {
+          "name": "is_key",
+          "type": "bool",
+          "nullable": false,
+          "default": {
+            "value": false
+          }
+        },
+        {
+          "name": "substitute",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        }
+      ]
+    },
+    {
+      "local_table": "purchase_orders_table",
+      "module": "master",
+      "resource": "purchase-orders",
+      "primary_key": [
+        "number"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "number",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "supplier_id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "order_date",
+          "type": "timestamp",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "expected_delivery",
+          "type": "timestamp",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "created_by",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "delivery_address",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "delivery_city",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "tax_pct",
+          "type": "real",
+          "nullable": false,
+          "default": {
+            "value": 0.0
+          }
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": {
+            "now": true
+          }
+        }
+      ]
+    },
+    {
+      "local_table": "purchase_order_lines_table",
+      "module": "master",
+      "resource": "purchase-order-lines",
+      "primary_key": [
+        "id"
+      ],
+      "unique_keys": [],
+      "auto_increment": "id",
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "po_number",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "material_id",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "material_name",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "unit",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "unit_cost",
+          "type": "real",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "ordered_qty",
+          "type": "real",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "received_qty",
+          "type": "real",
+          "nullable": false,
+          "default": {
+            "value": 0.0
+          }
+        },
+        {
+          "name": "rejected_qty",
+          "type": "real",
+          "nullable": false,
+          "default": {
+            "value": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "local_table": "goods_receipts_table",
+      "module": "master",
+      "resource": "goods-receipts",
+      "primary_key": [
+        "id"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "po_number",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "received_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "subtotal",
+          "type": "real",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "tax",
+          "type": "real",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "total",
+          "type": "real",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        }
+      ]
+    },
+    {
+      "local_table": "stock_movements_table",
+      "module": "master",
+      "resource": "stock-movements",
+      "primary_key": [
+        "id"
+      ],
+      "unique_keys": [],
+      "auto_increment": "id",
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "material_id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "qty_delta",
+          "type": "real",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "reason",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "reference",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "unit_cost",
+          "type": "real",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": {
+            "now": true
+          }
+        }
+      ]
+    },
+    {
+      "local_table": "app_metadata",
+      "module": "operations",
+      "resource": "settings",
+      "primary_key": [
+        "key"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": [
+        "kds_alert_settings",
+        "kds_kitchen_stations"
+      ],
+      "columns": [
+        {
+          "name": "key",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "value",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        }
+      ]
+    },
+    {
+      "local_table": "restaurant_tables",
+      "module": "operations",
+      "resource": "tables",
+      "primary_key": [
+        "id"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "label",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "seats",
+          "type": "int",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "zone",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "guest_count",
+          "type": "int",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "elapsed_minutes",
+          "type": "int",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "order_total_minor",
+          "type": "int",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "reserved_by_name",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "reserved_at",
+          "type": "timestamp",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": {
+            "now": true
+          }
+        },
+        {
+          "name": "floor",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": "Ground Floor"
+          }
+        },
+        {
+          "name": "shape",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": "square"
+          }
+        },
+        {
+          "name": "server_name",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "payment_pending",
+          "type": "bool",
+          "nullable": false,
+          "default": {
+            "value": false
+          }
+        },
+        {
+          "name": "current_order_id",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "seated_at",
+          "type": "timestamp",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "last_cleaned_at",
+          "type": "timestamp",
+          "nullable": true,
+          "default": null
+        }
+      ]
+    },
+    {
+      "local_table": "shifts",
+      "module": "operations",
+      "resource": "shifts",
+      "primary_key": [
+        "shift_id"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "shift_id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "location_id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "opening_float_minor",
+          "type": "int",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "opened_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "closed_at",
+          "type": "timestamp",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "counted_cash_minor",
+          "type": "int",
+          "nullable": true,
+          "default": null
+        }
+      ]
+    },
+    {
+      "local_table": "orders",
+      "module": "operations",
+      "resource": "orders",
+      "primary_key": [
+        "client_order_id"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "client_order_id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "location_id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "currency_code",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "order_type",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "table_label",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": {
+            "now": true
+          }
+        },
+        {
+          "name": "ops_status",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": "open"
+          }
+        },
+        {
+          "name": "channel",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": "POS"
+          }
+        },
+        {
+          "name": "guests",
+          "type": "int",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "server_name",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "discount_pct",
+          "type": "real",
+          "nullable": false,
+          "default": {
+            "value": 0.0
+          }
+        },
+        {
+          "name": "tax_pct",
+          "type": "real",
+          "nullable": false,
+          "default": {
+            "value": 5.0
+          }
+        },
+        {
+          "name": "bill_no",
+          "type": "int",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "payment_method",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "settled_at",
+          "type": "timestamp",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "customer_name",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "display_no",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        }
+      ]
+    },
+    {
+      "local_table": "order_lines",
+      "module": "operations",
+      "resource": "order-lines",
+      "primary_key": [
+        "client_order_id",
+        "item_id"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "client_order_id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "item_id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "unit_minor",
+          "type": "int",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "quantity",
+          "type": "int",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "station",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": "Main Kitchen"
+          }
+        },
+        {
+          "name": "is_veg",
+          "type": "bool",
+          "nullable": false,
+          "default": {
+            "value": true
+          }
+        },
+        {
+          "name": "kitchen_done",
+          "type": "bool",
+          "nullable": false,
+          "default": {
+            "value": false
+          }
+        }
+      ]
+    },
+    {
+      "local_table": "kitchen_tickets",
+      "module": "operations",
+      "resource": "kitchen-tickets",
+      "primary_key": [
+        "ticket_id"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "ticket_id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "client_order_id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": {
+            "now": true
+          }
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "urgent",
+          "type": "bool",
+          "nullable": false,
+          "default": {
+            "value": false
+          }
+        },
+        {
+          "name": "completed_at",
+          "type": "timestamp",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "kot_no",
+          "type": "int",
+          "nullable": true,
+          "default": null
+        }
+      ]
+    },
+    {
+      "local_table": "payments",
+      "module": "operations",
+      "resource": "payments",
+      "primary_key": [
+        "payment_id"
+      ],
+      "unique_keys": [
+        [
+          "client_order_id"
+        ]
+      ],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "payment_id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "client_order_id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "method",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "amount_minor",
+          "type": "int",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "received_minor",
+          "type": "int",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "recorded_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": {
+            "now": true
+          }
+        }
+      ]
+    },
+    {
+      "local_table": "deliveries_table",
+      "module": "operations",
+      "resource": "deliveries",
+      "primary_key": [
+        "id"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "order_id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "merchant",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "rider_name",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "eta_minutes",
+          "type": "int",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "distance_km",
+          "type": "real",
+          "nullable": false,
+          "default": {
+            "value": 0.0
+          }
+        },
+        {
+          "name": "customer_name",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "address",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "promised_at",
+          "type": "timestamp",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": null
+        }
+      ]
+    },
+    {
+      "local_table": "reservations_table",
+      "module": "operations",
+      "resource": "reservations",
+      "primary_key": [
+        "id"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "guest_name",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "guests",
+          "type": "int",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "scheduled_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "table_id",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": false,
+          "default": {
+            "value": ""
+          }
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": {
+            "now": true
+          }
+        }
+      ]
+    },
+    {
+      "local_table": "qr_codes_table",
+      "module": "operations",
+      "resource": "qr-codes",
+      "primary_key": [
+        "table_id"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "table_id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "nullable": false,
+          "default": {
+            "value": true
+          }
+        },
+        {
+          "name": "token",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "last_scanned_at",
+          "type": "timestamp",
+          "nullable": true,
+          "default": null
+        }
+      ]
+    },
+    {
+      "local_table": "qr_sessions_table",
+      "module": "operations",
+      "resource": "qr-sessions",
+      "primary_key": [
+        "id"
+      ],
+      "unique_keys": [],
+      "auto_increment": null,
+      "only_keys": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "table_label",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "guests",
+          "type": "int",
+          "nullable": false,
+          "default": {
+            "value": 1
+          }
+        },
+        {
+          "name": "started_at",
+          "type": "timestamp",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "order_id",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "item_count",
+          "type": "int",
+          "nullable": false,
+          "default": {
+            "value": 0
+          }
+        },
+        {
+          "name": "total_minor",
+          "type": "int",
+          "nullable": false,
+          "default": {
+            "value": 0
+          }
+        },
+        {
+          "name": "closed_at",
+          "type": "timestamp",
+          "nullable": true,
+          "default": null
+        }
+      ]
+    }
+  ]
+}

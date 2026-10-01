@@ -1,14 +1,65 @@
 PROVIYAA POS — LOCAL DEVELOPMENT
 
-Flutter/Dart are not installed. Do not install system-wide without approval.
+Flutter: C:\src\flutter\bin (3.47.x). Node 20+ for both backends.
 
-When available:
-1. cd /Users/lohit/agentic-os-coder/proviyaa-pos
-2. flutter doctor
-3. flutter devices
-4. flutter pub get
-5. flutter analyze
-6. flutter test
-7. flutter run --dart-define=APP_ENV=local --dart-define=DATA_MODE=local_demo --dart-define=SYNC_ENABLED=false
+The repository holds three parts:
+  lib/                  Flutter POS + restaurant vendor panel (offline-first, Drift)
+  backend/              POS backend (Hono) — the app's only way to the database
+  master-admin/         Proviyaa master panel (React frontend + Express backend):
+                        platform admins onboard restaurants, branches and POS accounts
 
-Config is read through lib/config/app_config.dart using --dart-define. Flutter does not automatically load env files. Copy .env.local.example to .env.local, fill only local-safe values, and run ./tool/run_local.sh; the launcher translates the allowlisted values into --dart-define flags. Keep local_demo and sync disabled unless the environment is explicitly approved. Never embed service-role keys, database passwords, MCP tokens or production credentials.
+All three share ONE database and ONE set of accounts (master-admin's users
+table). Both backends sign the same JWT with the same JWT_SECRET, so one
+login works everywhere.
+
+Whole platform on this machine (no Supabase needed)
+1. cd backend && npm install && npm run start:local
+     → POS backend on http://localhost:8787 and a local Postgres on
+       postgresql://postgres:postgres@127.0.0.1:55432/postgres
+       seeded with: platform admin superadmin@onlatur.com / Proviyaa@2026
+                    Spicy Bistro owner admin@spicybistro.com / SpicyBistro@2026
+2. master-admin/backend/.env:
+     DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:55432/postgres
+     JWT_SECRET=local-development-only-jwt-secret-not-for-production
+   cd master-admin/backend && npm install && npm run dev      → http://localhost:8000/api
+3. cd master-admin/frontend && npm install && npm run dev     → http://localhost:5173
+   Sign in as the platform admin → Partners → create a restaurant, its
+   branches, and (Restaurant POS accounts) its owner / manager / cashier.
+4. App: copy .env.local.example to .env.local (PROVIYAA_API_BASE_URL=http://localhost:8787),
+   then ./tool/run_local.ps1 (Windows) or ./tool/run_local.sh.
+   Sign in with a restaurant account → that restaurant opens. Sign in as the
+   platform admin → pick any restaurant. The login is kept in the OS
+   keystore, so the app reopens signed in (even offline) until you sign out
+   or the account is suspended.
+5. In the vendor panel: Staff & Users → Staff → Add New Staff. Turn on
+   "Give app login", pick a role (Biller, Captain, Chef, Manager… — "Seed
+   default roles" creates them), set a password. That person signs in on the
+   same login page and sees only their role's screens:
+     Biller (cashier) → POS billing      Captain → tables / dine-in
+     Chef → kitchen display only         Manager → vendor panel, no payroll
+   Roles & permissions → Roles makes custom roles from a base role and a set
+   of screens.
+
+Against the real database
+- Run supabase/RUN-IN-SUPABASE.sql once in the Supabase SQL editor.
+- backend/.env: DATABASE_URL + JWT_SECRET — the same values as master-admin/backend/.env.
+- cd backend && npm start
+
+Checks
+- flutter analyze && flutter test   (includes backend_end_to_end_test and
+                                     staff_roles_end_to_end_test: both start the two backends on
+                                     a temporary local database and drive the app through its
+                                     login page; need npm install in backend/ and
+                                     master-admin/backend/)
+- cd backend && npm test && npm run typecheck
+- cd backend && npx tsx scripts/with-local-db.ts -- npm --prefix ../master-admin/backend test
+- cd master-admin/frontend && npm test && npm run build
+
+How it fits together
+- The app holds NO Supabase URL, key or database password. It talks only to PROVIYAA_API_BASE_URL.
+- With PROVIYAA_API_BASE_URL empty the app runs fully local: demo sign-in, device database only.
+- With it set, sign-in is real (master-admin accounts through the backend). The account's
+  pos_role opens the vendor panel or the POS, and CloudSyncService syncs the device database
+  with the central one: every 30 s, 3 s after local edits, and from the Sync button.
+
+Never embed service-role keys, database passwords, MCP tokens or production credentials in the app.

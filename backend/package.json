@@ -1,0 +1,36 @@
+{
+  "name": "proviyaa-pos-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Proviyaa POS vendor-panel backend: Franchise/Chain, Master, Operations and Sync services over the central Supabase database.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "start:local": "tsx src/local-server.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:generate": "tsx scripts/generate-sql.ts"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-socket": "^0.2.11",
+    "@hono/node-server": "^2.1.1",
+    "bcryptjs": "^3.0.3",
+    "hono": "^4.13.10",
+    "jose": "^6.2.12",
+    "pg": "^8.23.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.0",
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.23.15",
+    "typescript": "~5.9",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.2"
+  }
+}

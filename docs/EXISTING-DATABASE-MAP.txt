@@ -1,7 +1,96 @@
 PROVIYAA POS — EXISTING DATABASE MAP
-STATUS: BLOCKED / READ-ONLY INSPECTION NOT PERFORMED
+STATUS: LIVE SCHEMA DISCOVERED READ-ONLY (2026-09-28)
 
-Existing OS repository: https://github.com/loki1514/Repo-1-
-No Supabase project reference, authenticated read-only MCP session, schema dump or authorized checkout was supplied. This file intentionally does not claim table names, keys, migrations, indexes, RLS policies, functions, tenant boundaries or reusable IDs.
+Project: https://ywylhzcxuoeilygzdonx.supabase.co (the staging project in .env.local; Q04)
 
-Next handoff: supply staging/development project reference; authenticate official project-scoped read-only Supabase MCP; inspect metadata, migrations, constraints, indexes, RLS and functions; compare deployed schema with Repo-1- migrations; record additive gaps before SQL. Never apply migrations until explicit approval.
+How this was discovered
+-----------------------
+Only the publishable key from .env.local was used. No row was read and nothing was written.
+The PostgREST schema listing needs a secret key, so tables and columns were found from error replies:
+- GET /rest/v1/<table>?select=*&limit=0 → 42501 "permission denied" means the table exists; PGRST205 means it doesn't (the hint names the closest real table).
+- GET /rest/v1/<table>?select=<col>&limit=0 → 42501 means the column exists; 42703 means it doesn't. Postgres resolves names before it checks privileges.
+- GET /rest/v1/<table>?<col>=eq.<junk> → the 22P02 message names the column's type.
+Nullability, defaults and CHECK constraints can't be seen this way. Where a table matches the Proviyaa OS repo (loki1514/Repo-1-, supabase/migrations 0001–0020) column for column, those come from the repo migration.
+
+The live database is the shared Proviyaa OS database, but it is NOT identical to the OS repo's main branch.
+Differences:
+- organizations has id, business_name, status, email, domain, created_at, updated_at. There is no name/slug/type/gstin; business_name is the display name.
+- Branches are public.org_locations (id, org_id, name, code, type, status, time_zone, currency, created_at, updated_at). There is no public.locations table.
+- users is (id, first_name, last_name, email, status, created_at, updated_at).
+- One Latur marketplace tables exist: ol_stores, ol_orders, ol_order_items, ol_products, ol_categories, ol_brands, ol_coupons, ol_media_assets, ol_refunds, ol_partner_devices, ol_booking_enquiries, ol_banners, ol_events, ol_reels.
+- There is no online_orders table (supabase/migrations/20260918_create_online_orders.sql was never applied here).
+
+Tables the POS vendor panel uses (columns: type)
+------------------------------------------------
+Identity / tenancy (owned by master-admin — master-admin/backend/migrations 001–008)
+  users                id uuid, first_name, last_name, email (unique), phone_number, password (bcrypt), status (Active|Inactive|Suspended),
+                       role_id → security_roles (platform roles; key 'super_admin' = platform admin),
+                       organization_id → organizations, location_id → org_locations, pos_role (restaurant POS role)   [008]
+  security_roles       id, key, name, permissions jsonb, is_active …   (master-admin's platform permission matrix)
+  organizations        id uuid, business_name text, status text, email text, domain text, phone_number, created_at, updated_at
+  org_locations        id uuid, org_id uuid, name text, area, code text, type (Restaurant|Cloud Kitchen|…), status (Active|Pending|Inactive|Draft),
+                       time_zone text, currency text, created_at, updated_at
+  _migrations          master-admin's migration ledger (RUN-IN-SUPABASE.sql records 006–008 there)
+  The POS signs in with master-admin's users (bcrypt + the shared JWT). org_users/roles below
+  are the OS's Supabase-Auth membership tables; the POS no longer uses them.
+  org_users            id uuid, organization_id uuid, user_id uuid, role_id uuid, email text, full_name text, status member_status(active|suspended), created_at, updated_at
+  roles                id uuid, slug text, name text, description text, is_system bool, created_at
+                       (slugs: org_admin, manager, biller, captain, kitchen, org_owner, location_manager, …)
+  users                id uuid, first_name text, last_name text, email text, status text, created_at, updated_at
+  helper functions     current_org_id(), is_platform_admin(), is_org_admin(uuid), next_org_seq(uuid,text), my_platform_role()
+
+Menu (repo 0006 + 0010)
+  menu_categories      id uuid, organization_id uuid, name text, sort_order int, created_at
+  menu_items           id uuid, organization_id uuid, category_id uuid, name, description, sku, price numeric(10,2), image_url,
+                       is_available bool, is_recommended bool, sort_order int, station text, course text(eat|drink),
+                       food_type text(veg|non_veg|egg), prep_minutes int, created_at, updated_at
+  menu_item_variants   id, organization_id, menu_item_id, name, price numeric, is_default bool, sort_order
+  item_channel_status  organization_id, menu_item_id, channel text, is_available bool, off_until timestamptz, updated_at
+
+Floor / orders / kitchen / billing (repo 0006 + 0010)
+  dining_areas         id, organization_id, name, sort_order, created_at
+  dining_tables        id, organization_id, area_id, label, seats int, min_capacity int, qr_token text, is_active bool, sort_order, created_at
+  table_sessions       id, organization_id, table_id, pin text(4 digits), guest_name, guest_phone, guest_count int,
+                       status text(open|billed|closed), opened_at, closed_at
+  service_requests     id, organization_id, table_id, session_id, kind, note, status, created_at, resolved_at
+  orders               id, organization_id, order_no bigint, display_no text, channel text(dine_in|delivery|pickup|online|swiggy|zomato|other),
+                       status text(new|in_billing|sent_to_kitchen|ready|awaiting_payment|paid|delivered|cancelled),
+                       table_id, session_id, customer_name, customer_phone, captain_name, subtotal, gst_pct, gst_amount, total,
+                       discount, service_charge, round_off, payment_method text(cash|upi|card|split), placed_by text(pos|captain|guest|integration),
+                       guest_count, notes, external_ref, paid_at, created_by, created_at, updated_at
+  order_items          id, order_id, menu_item_id, name, qty int, unit_price numeric, add_ons jsonb, notes, variant_name,
+                       status text(pending|preparing|ready|delivered|cancelled), kot_ticket_id, course, station, created_at
+  kot_tickets          id, organization_id, order_id, kot_no bigint, station, status text(new|preparing|ready|delivered),
+                       priority text(normal|urgent), created_at, updated_at
+  payments             id, organization_id, order_id, method text(cash|upi|card|wallet|due|other), amount numeric(>0), reference, created_by, created_at
+  order_events         id, organization_id, order_id, kind, message, actor, meta jsonb, created_at
+  kitchen_stations     id, organization_id, key, name, colour, sort_order
+  org_bill_settings    organization_id, legal_name, address, gstin, fssai, phone, sgst_pct, cgst_pct, service_charge_pct, round_off_enabled, footer_note, updated_at
+  channel_integrations id, organization_id, channel, display_name, is_connected, is_accepting, next_open_at, auto_accept, commission_pct, config jsonb, updated_at
+  org_counters         organization_id, kind, value bigint
+
+One Latur (online orders)
+  ol_orders            id uuid, organization_id uuid, user_id uuid, status text, subtotal, discount, gst, delivery_fee, total numeric,
+                       payment_method text, payment_status text, prep_minutes int, eta_minutes int, items jsonb, delivery_address jsonb,
+                       rider_name, rider_phone, customer_hash, cancelled_by uuid, created_at, updated_at
+  ol_order_items       id, order_id, product_id text, menu_item_id uuid, name, image, price, mrp, discount, qty int, line_total, created_at
+
+Not present in the live database
+--------------------------------
+Inventory (raw materials, stock movements), suppliers and supplier prices, purchase orders and GRN, recipes, offers, a media library per organization, reservations, deliveries, cash shifts, franchise records (targets, stock transfers, audits, exceptions), and Staff & Users:
+  pos_staff (employees: HR profile, pay terms, user_id → their login in users), pos_staff_roles (the restaurant's roles: base pos_role + screens),
+  pos_staff_attendance, pos_staff_shifts (work shifts), pos_staff_roster, pos_staff_advances, pos_staff_salaries, pos_staff_approvals,
+  pos_training_modules, pos_training_attempts, pos_login_security (per login: staff role, last login/seen, failed attempts, lock, forced
+  password change), pos_login_events (sign-in history), pos_audit_log (who changed what in the panel).
+supabase/migrations/20260928_pos_vendor_backend.sql adds these as new pos_* tables (RLS on, no anon access) and nullable location_id columns. supabase/RUN-IN-SUPABASE.sql bundles it with master-admin migrations 006–008. The owner reviews it and runs it in the Supabase SQL editor; nothing in this repo applies it automatically.
+
+Access model the backend relies on
+----------------------------------
+The Flutter app never calls Supabase. The backend (backend/) is the only component with database access. It connects with DATABASE_URL, the same connection master-admin uses, and signs users in against master-admin's users table.
+
+That connection bypasses RLS, so the backend enforces tenancy in code:
+- every query is scoped to the caller's organization;
+- client-supplied references are checked for ownership;
+- upserts refuse to update another organization's row.
+
+backend/test/auth-and-tenancy.test.ts attacks this with a second tenant. The database URL and JWT secret live only in backend/.env, never in the app.

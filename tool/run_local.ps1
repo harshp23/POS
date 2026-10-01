@@ -9,7 +9,10 @@ if (-not (Test-Path $EnvFile)) {
     exit 1
 }
 
-$AllowedKeys = @('APP_ENV', 'DATA_MODE', 'SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY', 'PROVIYAA_API_BASE_URL', 'SYNC_ENABLED')
+$AllowedKeys = @('APP_ENV', 'DATA_MODE', 'PROVIYAA_API_BASE_URL', 'SYNC_ENABLED')
+# Supabase settings belong to the backend (backend/.env) now; the app never
+# receives them. Old .env.local files still carrying them are tolerated.
+$BackendOnlyKeys = @('SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY')
 $DartDefines = @()
 
 Get-Content $EnvFile | ForEach-Object {
@@ -21,7 +24,9 @@ Get-Content $EnvFile | ForEach-Object {
     }
     $key = $Matches[1].Trim()
     $value = $Matches[2].Trim()
-    if ($AllowedKeys -contains $key) {
+    if ($BackendOnlyKeys -contains $key) {
+        Write-Warning "Ignoring $key — Supabase settings go in backend/.env; the app talks only to PROVIYAA_API_BASE_URL."
+    } elseif ($AllowedKeys -contains $key) {
         $DartDefines += "--dart-define=$key=$value"
     } else {
         Write-Error "Refusing unsupported or secret env key: $key"
