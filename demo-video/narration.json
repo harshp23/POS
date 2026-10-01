@@ -1,0 +1,17 @@
+[
+  { "id": "intro", "title": "Proviyaa Restaurant Vendor Panel", "subtitle": "How a restaurant runs on it, step by step", "text": "This is the Proviyaa restaurant vendor panel. One login for the whole restaurant, working online and offline, on the same database as Proviyaa master." },
+  { "id": "master", "step": "Step 1", "title": "Onboard the restaurant in Proviyaa master", "text": "Your team onboards a restaurant in Proviyaa master: add the partner, its branches, and the owner's login. The same database and the same login work in the vendor panel." },
+  { "id": "signin", "step": "Step 2", "title": "The owner signs in", "text": "The owner signs in to the vendor panel, sets their own password on the first sign-in, and lands on the restaurant dashboard: sales, orders, pending verifications, kitchen and staff at a glance." },
+  { "id": "menu", "step": "Step 3", "title": "Build the menu", "text": "In Master, the restaurant builds its menu: sections, dishes with photos, veg or non-veg, prices, kitchen stations, and the channels each dish is sold on." },
+  { "id": "stock", "step": "Step 4", "title": "Stock, recipes and suppliers", "text": "Raw materials, recipes with food cost, supplier price quotes and purchase orders keep the kitchen's costs under control." },
+  { "id": "tables", "step": "Step 5", "title": "Floor plan and tables", "text": "Operations starts with the floor plan: floors and tables, reservations, seating guests, and taking the order right at the table." },
+  { "id": "kot", "step": "Step 6", "title": "Kitchen tickets", "text": "Every order raises a kitchen ticket. The kitchen screen moves it from new, to preparing, to ready." },
+  { "id": "billing", "step": "Step 7", "title": "Billing and payments", "text": "POS Billing handles dine-in, takeaway and delivery bills. Cash settles at once. Card and UPI stay pending until a manager verifies them." },
+  { "id": "live", "step": "Step 8", "title": "Live orders, delivery and online", "text": "Live Operations shows every order in real time, with delivery riders and Swiggy or Zomato orders in the same place." },
+  { "id": "offline", "step": "Step 9", "title": "Works offline", "text": "If the internet drops, billing continues on the device. Changes queue up, and sync to the server the moment the connection returns." },
+  { "id": "chain", "step": "Step 10", "title": "Chain view for several branches", "text": "Owners of more than one outlet get the chain view: branch performance, stock across branches, transfers, targets, exceptions and compliance." },
+  { "id": "staff", "step": "Step 11", "title": "Staff and roles", "text": "Staff and Users holds employees, attendance, shifts, salaries and app logins. Six roles: owner, restaurant admin, branch manager, cashier, captain and kitchen. Each sees only its own screens." },
+  { "id": "roles", "step": "Step 12", "title": "Each role gets its own panel", "text": "A branch manager sees only their branch. Cashiers get the POS, captains the tables, and the kitchen just its display." },
+  { "id": "business", "step": "Step 13", "title": "Customers, finance, tasks and more", "text": "Customers and loyalty, marketing campaigns, finance, the task manager, integrations and settings complete the back office." },
+  { "id": "outro", "title": "One database. One login.", "subtitle": "Proviyaa master and the vendor panel, together", "text": "All of it runs on one database with Proviyaa master, so what the platform sets up is exactly what the restaurant sees. That is the Proviyaa restaurant vendor panel." }
+]

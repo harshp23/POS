@@ -22,3 +22,6 @@ coverage/
 *.key
 service-account*.json
 .chrome_dev_data/
+
+# dependencies (any package)
+node_modules/

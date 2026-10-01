@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: #0b1410; font-family: Inter, "Segoe UI", ui-sans-serif, system-ui, sans-serif; color: #f4f7f5; }
+      #root { position: relative; width: 1920px; height: 1080px; background: radial-gradient(1200px 700px at 20% 10%, #16352a 0%, #0b1410 60%); }
+      .scene { position: absolute; inset: 0; }
+      .brand { position: absolute; top: 44px; left: 72px; font-size: 24px; font-weight: 600; letter-spacing: 0.01em; color: #cfe9d9; display: flex; align-items: center; gap: 12px; }
+      .brand .dot { width: 14px; height: 14px; border-radius: 50%; background: #65d000; box-shadow: 0 0 18px #65d000aa; display: inline-block; }
+      .caption { position: absolute; top: 108px; left: 72px; width: 1776px; }
+      .step { font-size: 22px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #8fe05a; margin-bottom: 8px; }
+      h2 { font-size: 52px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+      .frame { position: absolute; top: 230px; left: 72px; width: 1776px; height: 760px; }
+      .shotwrap { position: absolute; inset: 0; border-radius: 18px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.08); background: #fff; }
+      .shot { width: 100%; height: auto; display: block; }
+      .card .hero { position: absolute; left: 72px; top: 380px; width: 1776px; }
+      .card h1 { font-size: 92px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; max-width: 1500px; }
+      .card .hero p { margin-top: 26px; font-size: 36px; color: #b9d6c6; font-weight: 400; }
+      .progress { position: absolute; left: 72px; right: 72px; bottom: 36px; height: 6px; background: rgba(255,255,255,0.12); border-radius: 3px; overflow: hidden; }
+      .bar { width: 100%; height: 100%; background: #65d000; transform-origin: left center; }
+      .counter { position: absolute; right: 72px; top: 48px; font-size: 20px; color: #9fbfae; font-weight: 500; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="171" data-width="1920" data-height="1080">
+
+    <section class="clip scene card" id="s0" data-start="0.60" data-duration="12.45" data-track-index="0">
+      <div class="brand"><span class="dot"></span>Proviyaa · Restaurant Vendor Panel</div>
+      <div class="hero"><h1>Proviyaa Restaurant Vendor Panel</h1><p>How a restaurant runs on it, step by step</p></div>
+      <div class="progress"><div class="bar" id="p0"></div></div>
+      <div class="counter"></div>
+    </section>
+    <audio id="v0" data-start="0.60" data-duration="10.85" data-track-index="1" data-volume="1" src="assets/voice/intro.wav"></audio>
+
+    <section class="clip scene " id="s1" data-start="13.05" data-duration="12.08" data-track-index="0">
+      <div class="brand"><span class="dot"></span>Proviyaa · Restaurant Vendor Panel</div>
+      
+      <div class="caption"><div class="step">Step 1</div><h2>Onboard the restaurant in Proviyaa master</h2></div>
+      <div class="frame">      <div class="clip shotwrap" id="s1i0" data-start="13.05" data-duration="6.04"><img class="shot" src="assets/shots/master-partners.png" alt=""></div>
+      <div class="clip shotwrap" id="s1i1" data-start="19.09" data-duration="6.04"><img class="shot" src="assets/shots/master-branches-logins.png" alt=""></div></div>
+      <div class="progress"><div class="bar" id="p1"></div></div>
+      <div class="counter">Step 1 of 13</div>
+    </section>
+    <audio id="v1" data-start="13.05" data-duration="11.18" data-track-index="1" data-volume="1" src="assets/voice/master.wav"></audio>
+
+    <section class="clip scene " id="s2" data-start="25.13" data-duration="13.75" data-track-index="0">
+      <div class="brand"><span class="dot"></span>Proviyaa · Restaurant Vendor Panel</div>
+      
+      <div class="caption"><div class="step">Step 2</div><h2>The owner signs in</h2></div>
+      <div class="frame">      <div class="clip shotwrap" id="s2i0" data-start="25.13" data-duration="13.75"><img class="shot" src="assets/shots/owner-dashboard.png" alt=""></div></div>
+      <div class="progress"><div class="bar" id="p2"></div></div>
+      <div class="counter">Step 2 of 13</div>
+    </section>
+    <audio id="v2" data-start="25.13" data-duration="12.85" data-track-index="1" data-volume="1" src="assets/voice/signin.wav"></audio>
+
+    <section class="clip scene " id="s3" data-start="38.88" data-duration="13.07" data-track-index="0">
+      <div class="brand"><span class="dot"></span>Proviyaa · Restaurant Vendor Panel</div>
+      
+      <div class="caption"><div class="step">Step 3</div><h2>Build the menu</h2></div>
+      <div class="frame">      <div class="clip shotwrap" id="s3i0" data-start="38.88" data-duration="6.53"><img class="shot" src="assets/shots/menu-grid.png" alt=""></div>
+      <div class="clip shotwrap" id="s3i1" data-start="45.41" data-duration="6.53"><img class="shot" src="assets/shots/media.png" alt=""></div></div>
+      <div class="progress"><div class="bar" id="p3"></div></div>
+      <div class="counter">Step 3 of 13</div>
+    </section>
+    <audio id="v3" data-start="38.88" data-duration="12.17" data-track-index="1" data-volume="1" src="assets/voice/menu.wav"></audio>
+
+    <section class="clip scene " id="s4" data-start="51.94" data-duration="9.37" data-track-index="0">
+      <div class="brand"><span class="dot"></span>Proviyaa · Restaurant Vendor Panel</div>
+      
+      <div class="caption"><div class="step">Step 4</div><h2>Stock, recipes and suppliers</h2></div>
+      <div class="frame">      <div class="clip shotwrap" id="s4i0" data-start="51.94" data-duration="3.12"><img class="shot" src="assets/shots/inventory.png" alt=""></div>
+      <div class="clip shotwrap" id="s4i1" data-start="55.07" data-duration="3.12"><img class="shot" src="assets/shots/recipes.png" alt=""></div>
+      <div class="clip shotwrap" id="s4i2" data-start="58.19" data-duration="3.12"><img class="shot" src="assets/shots/suppliers.png" alt=""></div></div>
+      <div class="progress"><div class="bar" id="p4"></div></div>
+      <div class="counter">Step 4 of 13</div>
+    </section>
+    <audio id="v4" data-start="51.94" data-duration="8.47" data-track-index="1" data-volume="1" src="assets/voice/stock.wav"></audio>
+
+    <section class="clip scene " id="s5" data-start="61.31" data-duration="9.38" data-track-index="0">
+      <div class="brand"><span class="dot"></span>Proviyaa · Restaurant Vendor Panel</div>
+      
+      <div class="caption"><div class="step">Step 5</div><h2>Floor plan and tables</h2></div>
+      <div class="frame">      <div class="clip shotwrap" id="s5i0" data-start="61.31" data-duration="4.69"><img class="shot" src="assets/shots/dine-in.png" alt=""></div>
+      <div class="clip shotwrap" id="s5i1" data-start="66.00" data-duration="4.69"><img class="shot" src="assets/shots/reservations.png" alt=""></div></div>
+      <div class="progress"><div class="bar" id="p5"></div></div>
+      <div class="counter">Step 5 of 13</div>
+    </section>
+    <audio id="v5" data-start="61.31" data-duration="8.48" data-track-index="1" data-volume="1" src="assets/voice/tables.wav"></audio>
+
+    <section class="clip scene " id="s6" data-start="70.70" data-duration="8.27" data-track-index="0">
+      <div class="brand"><span class="dot"></span>Proviyaa · Restaurant Vendor Panel</div>
+      
+      <div class="caption"><div class="step">Step 6</div><h2>Kitchen tickets</h2></div>
+      <div class="frame">      <div class="clip shotwrap" id="s6i0" data-start="70.70" data-duration="8.27"><img class="shot" src="assets/shots/kot.png" alt=""></div></div>
+      <div class="progress"><div class="bar" id="p6"></div></div>
+      <div class="counter">Step 6 of 13</div>
+    </section>
+    <audio id="v6" data-start="70.70" data-duration="7.37" data-track-index="1" data-volume="1" src="assets/voice/kot.wav"></audio>
+
+    <section class="clip scene " id="s7" data-start="78.97" data-duration="11.91" data-track-index="0">
+      <div class="brand"><span class="dot"></span>Proviyaa · Restaurant Vendor Panel</div>
+      
+      <div class="caption"><div class="step">Step 7</div><h2>Billing and payments</h2></div>
+      <div class="frame">      <div class="clip shotwrap" id="s7i0" data-start="78.97" data-duration="5.96"><img class="shot" src="assets/shots/pos-billing.png" alt=""></div>
+      <div class="clip shotwrap" id="s7i1" data-start="84.93" data-duration="5.96"><img class="shot" src="assets/shots/pos-offline-bill.png" alt=""></div></div>
+      <div class="progress"><div class="bar" id="p7"></div></div>
+      <div class="counter">Step 7 of 13</div>
+    </section>
+    <audio id="v7" data-start="78.97" data-duration="11.01" data-track-index="1" data-volume="1" src="assets/voice/billing.wav"></audio>
+
+    <section class="clip scene " id="s8" data-start="90.88" data-duration="8.54" data-track-index="0">
+      <div class="brand"><span class="dot"></span>Proviyaa · Restaurant Vendor Panel</div>
+      
+      <div class="caption"><div class="step">Step 8</div><h2>Live orders, delivery and online</h2></div>
+      <div class="frame">      <div class="clip shotwrap" id="s8i0" data-start="90.88" data-duration="2.85"><img class="shot" src="assets/shots/live-operations.png" alt=""></div>
+      <div class="clip shotwrap" id="s8i1" data-start="93.73" data-duration="2.85"><img class="shot" src="assets/shots/delivery.png" alt=""></div>
+      <div class="clip shotwrap" id="s8i2" data-start="96.58" data-duration="2.85"><img class="shot" src="assets/shots/online-orders.png" alt=""></div></div>
+      <div class="progress"><div class="bar" id="p8"></div></div>
+      <div class="counter">Step 8 of 13</div>
+    </section>
+    <audio id="v8" data-start="90.88" data-duration="7.64" data-track-index="1" data-volume="1" src="assets/voice/live.wav"></audio>
+
+    <section class="clip scene " id="s9" data-start="99.42" data-duration="10.06" data-track-index="0">
+      <div class="brand"><span class="dot"></span>Proviyaa · Restaurant Vendor Panel</div>
+      
+      <div class="caption"><div class="step">Step 9</div><h2>Works offline</h2></div>
+      <div class="frame">      <div class="clip shotwrap" id="s9i0" data-start="99.42" data-duration="5.03"><img class="shot" src="assets/shots/pos-offline-settled.png" alt=""></div>
+      <div class="clip shotwrap" id="s9i1" data-start="104.45" data-duration="5.03"><img class="shot" src="assets/shots/pos-synced.png" alt=""></div></div>
+      <div class="progress"><div class="bar" id="p9"></div></div>
+      <div class="counter">Step 9 of 13</div>
+    </section>
+    <audio id="v9" data-start="99.42" data-duration="9.16" data-track-index="1" data-volume="1" src="assets/voice/offline.wav"></audio>
+
+    <section class="clip scene " id="s10" data-start="109.48" data-duration="10.97" data-track-index="0">
+      <div class="brand"><span class="dot"></span>Proviyaa · Restaurant Vendor Panel</div>
+      
+      <div class="caption"><div class="step">Step 10</div><h2>Chain view for several branches</h2></div>
+      <div class="frame">      <div class="clip shotwrap" id="s10i0" data-start="109.48" data-duration="3.66"><img class="shot" src="assets/shots/command-center.png" alt=""></div>
+      <div class="clip shotwrap" id="s10i1" data-start="113.14" data-duration="3.66"><img class="shot" src="assets/shots/branch-performance.png" alt=""></div>
+      <div class="clip shotwrap" id="s10i2" data-start="116.79" data-duration="3.66"><img class="shot" src="assets/shots/chain-inventory.png" alt=""></div></div>
+      <div class="progress"><div class="bar" id="p10"></div></div>
+      <div class="counter">Step 10 of 13</div>
+    </section>
+    <audio id="v10" data-start="109.48" data-duration="10.07" data-track-index="1" data-volume="1" src="assets/voice/chain.wav"></audio>
+
+    <section class="clip scene " id="s11" data-start="120.45" data-duration="16.41" data-track-index="0">
+      <div class="brand"><span class="dot"></span>Proviyaa · Restaurant Vendor Panel</div>
+      
+      <div class="caption"><div class="step">Step 11</div><h2>Staff and roles</h2></div>
+      <div class="frame">      <div class="clip shotwrap" id="s11i0" data-start="120.45" data-duration="8.21"><img class="shot" src="assets/shots/staff-directory.png" alt=""></div>
+      <div class="clip shotwrap" id="s11i1" data-start="128.66" data-duration="8.21"><img class="shot" src="assets/shots/roles.png" alt=""></div></div>
+      <div class="progress"><div class="bar" id="p11"></div></div>
+      <div class="counter">Step 11 of 13</div>
+    </section>
+    <audio id="v11" data-start="120.45" data-duration="15.51" data-track-index="1" data-volume="1" src="assets/voice/staff.wav"></audio>
+
+    <section class="clip scene " id="s12" data-start="136.86" data-duration="10.09" data-track-index="0">
+      <div class="brand"><span class="dot"></span>Proviyaa · Restaurant Vendor Panel</div>
+      
+      <div class="caption"><div class="step">Step 12</div><h2>Each role gets its own panel</h2></div>
+      <div class="frame">      <div class="clip shotwrap" id="s12i0" data-start="136.86" data-duration="3.36"><img class="shot" src="assets/shots/manager-dashboard.png" alt=""></div>
+      <div class="clip shotwrap" id="s12i1" data-start="140.23" data-duration="3.36"><img class="shot" src="assets/shots/cashier-pos.png" alt=""></div>
+      <div class="clip shotwrap" id="s12i2" data-start="143.59" data-duration="3.36"><img class="shot" src="assets/shots/kitchen-kds.png" alt=""></div></div>
+      <div class="progress"><div class="bar" id="p12"></div></div>
+      <div class="counter">Step 12 of 13</div>
+    </section>
+    <audio id="v12" data-start="136.86" data-duration="9.19" data-track-index="1" data-volume="1" src="assets/voice/roles.wav"></audio>
+
+    <section class="clip scene " id="s13" data-start="146.95" data-duration="10.24" data-track-index="0">
+      <div class="brand"><span class="dot"></span>Proviyaa · Restaurant Vendor Panel</div>
+      
+      <div class="caption"><div class="step">Step 13</div><h2>Customers, finance, tasks and more</h2></div>
+      <div class="frame">      <div class="clip shotwrap" id="s13i0" data-start="146.95" data-duration="2.56"><img class="shot" src="assets/shots/crm.png" alt=""></div>
+      <div class="clip shotwrap" id="s13i1" data-start="149.51" data-duration="2.56"><img class="shot" src="assets/shots/finance.png" alt=""></div>
+      <div class="clip shotwrap" id="s13i2" data-start="152.07" data-duration="2.56"><img class="shot" src="assets/shots/tasks.png" alt=""></div>
+      <div class="clip shotwrap" id="s13i3" data-start="154.63" data-duration="2.56"><img class="shot" src="assets/shots/integrations.png" alt=""></div></div>
+      <div class="progress"><div class="bar" id="p13"></div></div>
+      <div class="counter">Step 13 of 13</div>
+    </section>
+    <audio id="v13" data-start="146.95" data-duration="9.34" data-track-index="1" data-volume="1" src="assets/voice/business.wav"></audio>
+
+    <section class="clip scene card" id="s14" data-start="157.19" data-duration="12.93" data-track-index="0">
+      <div class="brand"><span class="dot"></span>Proviyaa · Restaurant Vendor Panel</div>
+      <div class="hero"><h1>One database. One login.</h1><p>Proviyaa master and the vendor panel, together</p></div>
+      <div class="progress"><div class="bar" id="p14"></div></div>
+      <div class="counter"></div>
+    </section>
+    <audio id="v14" data-start="157.19" data-duration="11.33" data-track-index="1" data-volume="1" src="assets/voice/outro.wav"></audio>
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#s0 .brand", {opacity:0, y:-10}, {opacity:1, y:0, duration:0.5}, 0.60);
+      tl.fromTo("#p0", {scaleX:0}, {scaleX:1, duration:12.45, ease:"none"}, 0.60);
+      tl.fromTo("#s0 h1", {opacity:0, y:30}, {opacity:1, y:0, duration:0.9, ease:"power3.out"}, 0.80);
+      tl.fromTo("#s0 .hero p", {opacity:0, y:20}, {opacity:1, y:0, duration:0.8, ease:"power3.out"}, 1.30);
+      tl.to("#s0", {opacity:0, duration:0.35}, 12.70);
+      tl.fromTo("#s1 .brand", {opacity:0, y:-10}, {opacity:1, y:0, duration:0.5}, 13.05);
+      tl.fromTo("#p1", {scaleX:0}, {scaleX:1, duration:12.08, ease:"none"}, 13.05);
+      tl.fromTo("#s1 .step", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.5}, 13.15);
+      tl.fromTo("#s1 h2", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.6}, 13.30);
+      tl.fromTo("#s1i0", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 13.05);
+      tl.fromTo("#s1i0 .shot", {y:0}, {y:-350, duration:4.64, ease:"sine.inOut"}, 13.85);
+      tl.fromTo("#s1i1", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 19.09);
+      tl.fromTo("#s1i1 .shot", {y:0}, {y:-350, duration:4.64, ease:"sine.inOut"}, 19.89);
+      tl.to("#s1", {opacity:0, duration:0.35}, 24.78);
+      tl.fromTo("#s2 .brand", {opacity:0, y:-10}, {opacity:1, y:0, duration:0.5}, 25.13);
+      tl.fromTo("#p2", {scaleX:0}, {scaleX:1, duration:13.75, ease:"none"}, 25.13);
+      tl.fromTo("#s2 .step", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.5}, 25.23);
+      tl.fromTo("#s2 h2", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.6}, 25.38);
+      tl.fromTo("#s2i0", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 25.13);
+      tl.fromTo("#s2i0 .shot", {y:0}, {y:-350, duration:12.35, ease:"sine.inOut"}, 25.93);
+      tl.to("#s2", {opacity:0, duration:0.35}, 38.53);
+      tl.fromTo("#s3 .brand", {opacity:0, y:-10}, {opacity:1, y:0, duration:0.5}, 38.88);
+      tl.fromTo("#p3", {scaleX:0}, {scaleX:1, duration:13.07, ease:"none"}, 38.88);
+      tl.fromTo("#s3 .step", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.5}, 38.98);
+      tl.fromTo("#s3 h2", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.6}, 39.13);
+      tl.fromTo("#s3i0", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 38.88);
+      tl.fromTo("#s3i0 .shot", {y:0}, {y:-350, duration:5.13, ease:"sine.inOut"}, 39.68);
+      tl.fromTo("#s3i1", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 45.41);
+      tl.fromTo("#s3i1 .shot", {y:0}, {y:-350, duration:5.13, ease:"sine.inOut"}, 46.21);
+      tl.to("#s3", {opacity:0, duration:0.35}, 51.59);
+      tl.fromTo("#s4 .brand", {opacity:0, y:-10}, {opacity:1, y:0, duration:0.5}, 51.94);
+      tl.fromTo("#p4", {scaleX:0}, {scaleX:1, duration:9.37, ease:"none"}, 51.94);
+      tl.fromTo("#s4 .step", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.5}, 52.04);
+      tl.fromTo("#s4 h2", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.6}, 52.19);
+      tl.fromTo("#s4i0", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 51.94);
+      tl.fromTo("#s4i0 .shot", {y:0}, {y:-350, duration:1.72, ease:"sine.inOut"}, 52.74);
+      tl.fromTo("#s4i1", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 55.07);
+      tl.fromTo("#s4i1 .shot", {y:0}, {y:-350, duration:1.72, ease:"sine.inOut"}, 55.87);
+      tl.fromTo("#s4i2", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 58.19);
+      tl.fromTo("#s4i2 .shot", {y:0}, {y:-350, duration:1.72, ease:"sine.inOut"}, 58.99);
+      tl.to("#s4", {opacity:0, duration:0.35}, 60.96);
+      tl.fromTo("#s5 .brand", {opacity:0, y:-10}, {opacity:1, y:0, duration:0.5}, 61.31);
+      tl.fromTo("#p5", {scaleX:0}, {scaleX:1, duration:9.38, ease:"none"}, 61.31);
+      tl.fromTo("#s5 .step", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.5}, 61.41);
+      tl.fromTo("#s5 h2", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.6}, 61.56);
+      tl.fromTo("#s5i0", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 61.31);
+      tl.fromTo("#s5i0 .shot", {y:0}, {y:-350, duration:3.29, ease:"sine.inOut"}, 62.11);
+      tl.fromTo("#s5i1", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 66.00);
+      tl.fromTo("#s5i1 .shot", {y:0}, {y:-350, duration:3.29, ease:"sine.inOut"}, 66.80);
+      tl.to("#s5", {opacity:0, duration:0.35}, 70.35);
+      tl.fromTo("#s6 .brand", {opacity:0, y:-10}, {opacity:1, y:0, duration:0.5}, 70.70);
+      tl.fromTo("#p6", {scaleX:0}, {scaleX:1, duration:8.27, ease:"none"}, 70.70);
+      tl.fromTo("#s6 .step", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.5}, 70.80);
+      tl.fromTo("#s6 h2", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.6}, 70.95);
+      tl.fromTo("#s6i0", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 70.70);
+      tl.fromTo("#s6i0 .shot", {y:0}, {y:-350, duration:6.87, ease:"sine.inOut"}, 71.50);
+      tl.to("#s6", {opacity:0, duration:0.35}, 78.62);
+      tl.fromTo("#s7 .brand", {opacity:0, y:-10}, {opacity:1, y:0, duration:0.5}, 78.97);
+      tl.fromTo("#p7", {scaleX:0}, {scaleX:1, duration:11.91, ease:"none"}, 78.97);
+      tl.fromTo("#s7 .step", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.5}, 79.07);
+      tl.fromTo("#s7 h2", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.6}, 79.22);
+      tl.fromTo("#s7i0", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 78.97);
+      tl.fromTo("#s7i0 .shot", {y:0}, {y:-350, duration:4.56, ease:"sine.inOut"}, 79.77);
+      tl.fromTo("#s7i1", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 84.93);
+      tl.fromTo("#s7i1 .shot", {y:0}, {y:-350, duration:4.56, ease:"sine.inOut"}, 85.73);
+      tl.to("#s7", {opacity:0, duration:0.35}, 90.53);
+      tl.fromTo("#s8 .brand", {opacity:0, y:-10}, {opacity:1, y:0, duration:0.5}, 90.88);
+      tl.fromTo("#p8", {scaleX:0}, {scaleX:1, duration:8.54, ease:"none"}, 90.88);
+      tl.fromTo("#s8 .step", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.5}, 90.98);
+      tl.fromTo("#s8 h2", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.6}, 91.13);
+      tl.fromTo("#s8i0", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 90.88);
+      tl.fromTo("#s8i0 .shot", {y:0}, {y:-350, duration:1.50, ease:"sine.inOut"}, 91.68);
+      tl.fromTo("#s8i1", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 93.73);
+      tl.fromTo("#s8i1 .shot", {y:0}, {y:-350, duration:1.50, ease:"sine.inOut"}, 94.53);
+      tl.fromTo("#s8i2", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 96.58);
+      tl.fromTo("#s8i2 .shot", {y:0}, {y:-350, duration:1.50, ease:"sine.inOut"}, 97.38);
+      tl.to("#s8", {opacity:0, duration:0.35}, 99.07);
+      tl.fromTo("#s9 .brand", {opacity:0, y:-10}, {opacity:1, y:0, duration:0.5}, 99.42);
+      tl.fromTo("#p9", {scaleX:0}, {scaleX:1, duration:10.06, ease:"none"}, 99.42);
+      tl.fromTo("#s9 .step", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.5}, 99.52);
+      tl.fromTo("#s9 h2", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.6}, 99.67);
+      tl.fromTo("#s9i0", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 99.42);
+      tl.fromTo("#s9i0 .shot", {y:0}, {y:-350, duration:3.63, ease:"sine.inOut"}, 100.22);
+      tl.fromTo("#s9i1", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 104.45);
+      tl.fromTo("#s9i1 .shot", {y:0}, {y:-350, duration:3.63, ease:"sine.inOut"}, 105.25);
+      tl.to("#s9", {opacity:0, duration:0.35}, 109.13);
+      tl.fromTo("#s10 .brand", {opacity:0, y:-10}, {opacity:1, y:0, duration:0.5}, 109.48);
+      tl.fromTo("#p10", {scaleX:0}, {scaleX:1, duration:10.97, ease:"none"}, 109.48);
+      tl.fromTo("#s10 .step", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.5}, 109.58);
+      tl.fromTo("#s10 h2", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.6}, 109.73);
+      tl.fromTo("#s10i0", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 109.48);
+      tl.fromTo("#s10i0 .shot", {y:0}, {y:-350, duration:2.26, ease:"sine.inOut"}, 110.28);
+      tl.fromTo("#s10i1", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 113.14);
+      tl.fromTo("#s10i1 .shot", {y:0}, {y:-350, duration:2.26, ease:"sine.inOut"}, 113.94);
+      tl.fromTo("#s10i2", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 116.79);
+      tl.fromTo("#s10i2 .shot", {y:0}, {y:-350, duration:2.26, ease:"sine.inOut"}, 117.59);
+      tl.to("#s10", {opacity:0, duration:0.35}, 120.10);
+      tl.fromTo("#s11 .brand", {opacity:0, y:-10}, {opacity:1, y:0, duration:0.5}, 120.45);
+      tl.fromTo("#p11", {scaleX:0}, {scaleX:1, duration:16.41, ease:"none"}, 120.45);
+      tl.fromTo("#s11 .step", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.5}, 120.55);
+      tl.fromTo("#s11 h2", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.6}, 120.70);
+      tl.fromTo("#s11i0", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 120.45);
+      tl.fromTo("#s11i0 .shot", {y:0}, {y:-350, duration:6.81, ease:"sine.inOut"}, 121.25);
+      tl.fromTo("#s11i1", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 128.66);
+      tl.fromTo("#s11i1 .shot", {y:0}, {y:-350, duration:6.81, ease:"sine.inOut"}, 129.46);
+      tl.to("#s11", {opacity:0, duration:0.35}, 136.51);
+      tl.fromTo("#s12 .brand", {opacity:0, y:-10}, {opacity:1, y:0, duration:0.5}, 136.86);
+      tl.fromTo("#p12", {scaleX:0}, {scaleX:1, duration:10.09, ease:"none"}, 136.86);
+      tl.fromTo("#s12 .step", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.5}, 136.96);
+      tl.fromTo("#s12 h2", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.6}, 137.11);
+      tl.fromTo("#s12i0", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 136.86);
+      tl.fromTo("#s12i0 .shot", {y:0}, {y:-350, duration:1.96, ease:"sine.inOut"}, 137.66);
+      tl.fromTo("#s12i1", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 140.23);
+      tl.fromTo("#s12i1 .shot", {y:0}, {y:-350, duration:1.96, ease:"sine.inOut"}, 141.03);
+      tl.fromTo("#s12i2", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 143.59);
+      tl.fromTo("#s12i2 .shot", {y:0}, {y:-350, duration:1.96, ease:"sine.inOut"}, 144.39);
+      tl.to("#s12", {opacity:0, duration:0.35}, 146.60);
+      tl.fromTo("#s13 .brand", {opacity:0, y:-10}, {opacity:1, y:0, duration:0.5}, 146.95);
+      tl.fromTo("#p13", {scaleX:0}, {scaleX:1, duration:10.24, ease:"none"}, 146.95);
+      tl.fromTo("#s13 .step", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.5}, 147.05);
+      tl.fromTo("#s13 h2", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.6}, 147.20);
+      tl.fromTo("#s13i0", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 146.95);
+      tl.fromTo("#s13i0 .shot", {y:0}, {y:-350, duration:1.50, ease:"sine.inOut"}, 147.75);
+      tl.fromTo("#s13i1", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 149.51);
+      tl.fromTo("#s13i1 .shot", {y:0}, {y:-350, duration:1.50, ease:"sine.inOut"}, 150.31);
+      tl.fromTo("#s13i2", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 152.07);
+      tl.fromTo("#s13i2 .shot", {y:0}, {y:-350, duration:1.50, ease:"sine.inOut"}, 152.87);
+      tl.fromTo("#s13i3", {opacity:0, y:24, scale:0.985}, {opacity:1, y:0, scale:1, duration:0.6, ease:"power2.out"}, 154.63);
+      tl.fromTo("#s13i3 .shot", {y:0}, {y:-350, duration:1.50, ease:"sine.inOut"}, 155.43);
+      tl.to("#s13", {opacity:0, duration:0.35}, 156.84);
+      tl.fromTo("#s14 .brand", {opacity:0, y:-10}, {opacity:1, y:0, duration:0.5}, 157.19);
+      tl.fromTo("#p14", {scaleX:0}, {scaleX:1, duration:12.93, ease:"none"}, 157.19);
+      tl.fromTo("#s14 h1", {opacity:0, y:30}, {opacity:1, y:0, duration:0.9, ease:"power3.out"}, 157.39);
+      tl.fromTo("#s14 .hero p", {opacity:0, y:20}, {opacity:1, y:0, duration:0.8, ease:"power3.out"}, 157.89);
+      tl.to("#s14", {opacity:0, duration:0.35}, 169.77);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
